@@ -12,3 +12,57 @@ backend/node_modules/
 frontend/node_modules/
 Thumbs.db
 .DS_Store
+.venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+Reg-Reporting-AI-Platform/
+env/
+venv/
+.venv/
+temp/
+project_docs/aws_architecture_icons_01302026/
+temp*/p
+ENV/
+*.egg-info/
+dist/
+build/
+ 
+# React / Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.js
+.pnp/
+coverage/
+build/
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+ 
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+ 
+# OS
+.DS_Store
+Thumbs.db
+ 
+# Logs
+logs/
+*.log
+ 
+# Environment
+.env
+ 
