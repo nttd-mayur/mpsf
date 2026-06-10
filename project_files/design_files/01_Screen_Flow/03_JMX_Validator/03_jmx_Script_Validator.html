@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JMeter Script Validation - Pipeline Demo</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d9e1ec;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --green: #16a34a;
+      --amber: #d97706;
+      --red: #dc2626;
+      --soft-blue: #e8f0ff;
+      --soft-green: #eaf8ef;
+      --soft-amber: #fff7e6;
+      --soft-red: #feecec;
+      --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    header {
+      background: linear-gradient(135deg, #172554, #2563eb);
+      color: white;
+      padding: 28px 36px 34px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 920px;
+      color: rgba(255,255,255,0.84);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: -22px auto 60px;
+      padding: 0 24px;
+    }
+
+    .top-card,
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .top-card {
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .request-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: 7px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 14px;
+      color: var(--ink);
+      background: white;
+      outline: none;
+    }
+
+    textarea { min-height: 88px; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.14);
+    }
+
+    .upload-box {
+      border: 2px dashed #93c5fd;
+      background: #eff6ff;
+      border-radius: 16px;
+      padding: 20px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .upload-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .upload-help {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.18s ease;
+    }
+
+    .primary { background: var(--blue); color: white; }
+    .primary:hover { background: var(--blue-dark); transform: translateY(-1px); }
+    .secondary { background: #e2e8f0; color: #334155; }
+    .secondary:hover { background: #cbd5e1; }
+    .success { background: var(--green); color: white; }
+    .success:hover { filter: brightness(0.94); }
+    .danger { background: var(--soft-red); color: var(--red); }
+    .ghost { background: transparent; color: var(--blue); border: 1px solid #bfdbfe; }
+    button:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; transform: none; }
+
+    .pipeline {
+      margin: 24px 0;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+
+    .step {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 15px;
+      min-height: 124px;
+      position: relative;
+    }
+
+    .step::after {
+      content: "→";
+      position: absolute;
+      right: -14px;
+      top: 42px;
+      color: #94a3b8;
+      font-size: 20px;
+      z-index: 2;
+    }
+
+    .step:last-child::after { content: ""; }
+
+    .step.active { border-color: var(--blue); background: var(--soft-blue); }
+    .step.done { border-color: #86efac; background: var(--soft-green); }
+    .step.warn { border-color: #fbbf24; background: var(--soft-amber); }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .step.active .step-number { background: var(--blue); color: white; }
+    .step.done .step-number { background: var(--green); color: white; }
+    .step.warn .step-number { background: var(--amber); color: white; }
+
+    .step h3 { margin: 0 0 6px; font-size: 15px; }
+    .step p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 0.95fr 1.45fr;
+      gap: 22px;
+    }
+
+    .card { padding: 20px; }
+    .card h2 { margin: 0 0 14px; font-size: 20px; }
+    .card-subtitle { margin: -5px 0 16px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+
+    .checklist { display: grid; gap: 10px; }
+
+    .check-item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 13px;
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 10px;
+      align-items: start;
+      background: white;
+    }
+
+    .status-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      margin-top: 2px;
+    }
+
+    .pass { background: var(--soft-green); color: var(--green); }
+    .fail { background: var(--soft-red); color: var(--red); }
+    .warning { background: var(--soft-amber); color: var(--amber); }
+    .pending { background: #eef2f7; color: #64748b; }
+
+    .check-title { font-weight: 850; margin-bottom: 3px; }
+    .check-desc { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .badge {
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      border-radius: 16px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      background: #fafafa;
+    }
+
+    .metric-value { font-size: 28px; font-weight: 950; margin-bottom: 4px; }
+    .metric-label { color: var(--muted); font-size: 13px; font-weight: 700; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .tab {
+      padding: 9px 13px;
+      background: #eef2f7;
+      color: #475569;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .tab.active { background: var(--blue); color: white; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+    }
+
+    th, td {
+      text-align: left;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    th { background: #f1f5f9; color: #475569; font-size: 12px; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+
+    .recommendations {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .rec {
+      border-left: 4px solid var(--blue);
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 12px 13px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .approval-panel {
+      margin-top: 22px;
+      background: #0f172a;
+      color: white;
+      border-radius: 18px;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .approval-panel h3 { margin: 0 0 4px; }
+    .approval-panel p { margin: 0; color: rgba(255,255,255,0.72); line-height: 1.45; }
+
+    .hidden { display: none; }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: #111827;
+      color: white;
+      padding: 13px 16px;
+      border-radius: 12px;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: 0.2s ease;
+      box-shadow: var(--shadow);
+      font-weight: 700;
+      z-index: 10;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1080px) {
+      .top-card, .layout { grid-template-columns: 1fr; }
+      .pipeline { grid-template-columns: repeat(3, 1fr); }
+      .step::after { display: none; }
+    }
+
+    @media (max-width: 720px) {
+      header { padding: 24px 20px 34px; }
+      .wrap { padding: 0 14px; }
+      .pipeline, .request-grid, .summary-grid { grid-template-columns: 1fr; }
+      .approval-panel { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>3. JMeter Script Validation</h1>
+    <p>Pipeline demo for uploading a recorded JMeter JMX file, validating script structure and test plan components, identifying risks, and approving the script for the next pipeline stage.</p>
+  </header>
+
+  <main class="wrap">
+    <section class="top-card">
+      <div>
+        <div class="request-grid">
+          <div>
+            <label for="requestId">Request ID</label>
+            <input id="requestId" value="PERF-REQ-1027" />
+          </div>
+          <div>
+            <label for="requestTitle">Request Title</label>
+            <input id="requestTitle" value="Customer Portal Checkout Performance Test" />
+          </div>
+          <div>
+            <label for="scriptId">Script ID</label>
+            <input id="scriptId" value="JMX-SCR-003" />
+          </div>
+          <div>
+            <label for="targetTool">Target Tool</label>
+            <select id="targetTool">
+              <option selected>Apache JMeter</option>
+              <option>JMeter to Gatling Conversion Candidate</option>
+              <option>JMeter to k6 Conversion Candidate</option>
+            </select>
+          </div>
+          <div>
+            <label for="jmeterVersion">Expected JMeter Version</label>
+            <select id="jmeterVersion">
+              <option>5.2.x</option>
+              <option>5.4.x</option>
+              <option selected>5.6.x</option>
+              <option>Latest approved enterprise version</option>
+            </select>
+          </div>
+          <div>
+            <label for="environment">Target Environment</label>
+            <select id="environment">
+              <option>DEV</option>
+              <option selected>QA Performance</option>
+              <option>Pre-Production</option>
+              <option>Production-like</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="secondary" onclick="loadSample()">Load Sample Metadata</button>
+          <button class="ghost" onclick="clearAll()">Reset Demo</button>
+        </div>
+      </div>
+
+      <div class="upload-box">
+        <p class="upload-title">Upload Recorded JMX</p>
+        <p class="upload-help">Upload the recorded <strong>.jmx</strong> file. This demo simulates validation for structure, version compatibility, test plan elements, thread groups, samplers, config elements, assertions, timers, controllers, listeners, and disabled components.</p>
+        <input id="jmxFile" type="file" accept=".jmx,.xml" />
+        <div class="actions">
+          <button class="primary" onclick="runValidation()">Analyze JMX Script</button>
+          <button class="secondary" onclick="exportValidationJson()">Export Validation JSON</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pipeline" aria-label="JMeter validation pipeline">
+      <div id="pipe1" class="step active">
+        <span class="step-number">1</span>
+        <h3>JMX Upload</h3>
+        <p>Accept recorded JMeter script and register script metadata.</p>
+      </div>
+      <div id="pipe2" class="step">
+        <span class="step-number">2</span>
+        <h3>Structure Scan</h3>
+        <p>Parse XML/JMX hierarchy and verify TestPlan integrity.</p>
+      </div>
+      <div id="pipe3" class="step">
+        <span class="step-number">3</span>
+        <h3>Element Discovery</h3>
+        <p>Inventory thread groups, samplers, configs, timers, controllers, and listeners.</p>
+      </div>
+      <div id="pipe4" class="step">
+        <span class="step-number">4</span>
+        <h3>Quality Rules</h3>
+        <p>Check assertions, parameterization, think time, disabled items, and anti-patterns.</p>
+      </div>
+      <div id="pipe5" class="step">
+        <span class="step-number">5</span>
+        <h3>Validation Report</h3>
+        <p>Generate findings, severity, recommendations, and readiness score.</p>
+      </div>
+      <div id="pipe6" class="step">
+        <span class="step-number">6</span>
+        <h3>Approval Gate</h3>
+        <p>Approve script for Script Update and Test Plan Update stages.</p>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="card">
+        <h2>Validation Checklist</h2>
+        <p class="card-subtitle">The application evaluates each rule and marks it as Pass, Warning, Fail, or Pending.</p>
+        <div id="checklist" class="checklist"></div>
+      </aside>
+
+      <section class="card">
+        <h2>Validation Dashboard</h2>
+        <p class="card-subtitle">Sample dashboard output after JMX analysis. The values below are generated by this demo and can be exported as JSON.</p>
+
+        <div class="summary-grid">
+          <div class="metric">
+            <div id="score" class="metric-value">--</div>
+            <div class="metric-label">Readiness Score</div>
+          </div>
+          <div class="metric">
+            <div id="passCount" class="metric-value">--</div>
+            <div class="metric-label">Passed Checks</div>
+          </div>
+          <div class="metric">
+            <div id="warningCount" class="metric-value">--</div>
+            <div class="metric-label">Warnings</div>
+          </div>
+          <div class="metric">
+            <div id="failCount" class="metric-value">--</div>
+            <div class="metric-label">Failures</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <span class="tab active" onclick="showTab('inventory', this)">Component Inventory</span>
+          <span class="tab" onclick="showTab('findings', this)">Findings</span>
+          <span class="tab" onclick="showTab('recommendations', this)">Recommendations</span>
+          <span class="tab" onclick="showTab('handoff', this)">Next Stage Handoff</span>
+        </div>
+
+        <div id="inventory" class="tab-panel">
+          <table>
+            <thead>
+              <tr><th>Component</th><th>Detected Count</th><th>Status</th><th>Comment</th></tr>
+            </thead>
+            <tbody id="inventoryRows"></tbody>
+          </table>
+        </div>
+
+        <div id="findings" class="tab-panel hidden">
+          <table>
+            <thead>
+              <tr><th>Severity</th><th>Area</th><th>Finding</th><th>Suggested Action</th></tr>
+            </thead>
+            <tbody id="findingRows"></tbody>
+          </table>
+        </div>
+
+        <div id="recommendations" class="tab-panel hidden">
+          <div class="recommendations" id="recommendationList"></div>
+        </div>
+
+        <div id="handoff" class="tab-panel hidden">
+          <table>
+            <thead>
+              <tr><th>Handoff Item</th><th>Output</th><th>Owner</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Validated JMX Baseline</td><td>Uploaded script with validation metadata</td><td>Performance Engineer</td></tr>
+              <tr><td>Script Update Backlog</td><td>Correlation, parameterization, listener cleanup, timer review</td><td>Automation Engineer</td></tr>
+              <tr><td>Test Plan Update Inputs</td><td>Thread group mapping, sampler count, workload readiness</td><td>Performance Architect</td></tr>
+              <tr><td>Approval Evidence</td><td>Validation JSON report and approval timestamp</td><td>Test Manager</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="approval-panel">
+          <div>
+            <h3 id="approvalTitle">Approval Gate: Pending Validation</h3>
+            <p id="approvalText">Run JMX analysis before approval. Approval enables the next stage: Script Update.</p>
+          </div>
+          <div class="actions" style="margin:0; justify-content:flex-end;">
+            <button id="approveBtn" class="success" onclick="approveScript()" disabled>Approve Validation</button>
+            <!-- <button id="nextStageBtn" class="primary" onclick="nextStage()" disabled>Move to Script Update</button> -->
+            <a href="..\04_JMX_Script_Analyzer\05_Analysis_auto_correct_demo.html" target="_blank" rel="noopener noreferrer">
+              <button id="nextStageBtn" class="primary" disabled>Move to Script Update</button>
+            </a>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast">Saved</div>
+
+  <script>
+    const checklistItems = [
+      { key: 'structure', title: 'Valid JMX Structure', desc: 'XML can be parsed and contains expected JMeter test plan hierarchy.' },
+      { key: 'version', title: 'Supported JMeter Version Compatibility', desc: 'Script is compatible with the approved JMeter runtime version.' },
+      { key: 'testPlan', title: 'Presence of Test Plan Elements', desc: 'TestPlan, hashTree, and required execution containers are available.' },
+      { key: 'threadGroups', title: 'Thread Groups', desc: 'At least one executable thread group is present and enabled.' },
+      { key: 'samplers', title: 'HTTP Samplers', desc: 'HTTP Request samplers are detected for business transactions.' },
+      { key: 'config', title: 'Config Elements', desc: 'HTTP defaults, headers, cookies, cache, CSV data, and variables are checked.' },
+      { key: 'listeners', title: 'Listeners', desc: 'Listeners are reviewed for local debug use versus load execution readiness.' },
+      { key: 'assertions', title: 'Assertions', desc: 'Functional correctness checks are present for critical transactions.' },
+      { key: 'timers', title: 'Timers', desc: 'Think time and pacing controls are validated.' },
+      { key: 'controllers', title: 'Controllers', desc: 'Transaction, loop, if, and runtime controllers are reviewed.' },
+      { key: 'disabled', title: 'Disabled or Unused Components', desc: 'Disabled elements, orphan nodes, and redundant debug components are identified.' }
+    ];
+
+    let validationResult = null;
+
+    function statusIcon(status) {
+      if (status === 'pass') return '✓';
+      if (status === 'warning') return '!';
+      if (status === 'fail') return '×';
+      return '…';
+    }
+
+    function statusLabel(status) {
+      return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    function renderChecklist(statusMap = {}) {
+      const target = document.getElementById('checklist');
+      target.innerHTML = checklistItems.map(item => {
+        const status = statusMap[item.key] || 'pending';
+        return `
+          <div class="check-item">
+            <span class="status-dot ${status}">${statusIcon(status)}</span>
+            <div>
+              <div class="check-title">${item.title}</div>
+              <div class="check-desc">${item.desc}</div>
+            </div>
+            <span class="badge ${status}">${statusLabel(status)}</span>
+          </div>`;
+      }).join('');
+    }
+
+    function setPipeline(stage, hasWarnings = false) {
+      for (let i = 1; i <= 6; i++) {
+        const el = document.getElementById('pipe' + i);
+        el.className = 'step';
+        if (i < stage) el.classList.add('done');
+        if (i === stage) el.classList.add(hasWarnings ? 'warn' : 'active');
+      }
+    }
+
+    function runValidation() {
+      const fileInput = document.getElementById('jmxFile');
+      const fileName = fileInput.files.length ? fileInput.files[0].name : 'sample_recorded_checkout_flow.jmx';
+      setPipeline(2);
+
+      setTimeout(() => {
+        validationResult = buildSampleValidation(fileName);
+        renderResults(validationResult);
+        setPipeline(6, validationResult.summary.fail > 0 || validationResult.summary.warning > 0);
+        document.getElementById('approveBtn').disabled = validationResult.summary.fail > 0;
+        document.getElementById('approvalTitle').textContent = validationResult.summary.fail > 0 ? 'Approval Gate: Blocked' : 'Approval Gate: Ready for Approval';
+        document.getElementById('approvalText').textContent = validationResult.summary.fail > 0
+          ? 'Critical failures must be fixed before this JMX can move to Script Update.'
+          : 'Validation completed. Warnings can be carried as backlog items or fixed before execution.';
+        toast('JMX analysis completed');
+      }, 500);
+    }
+
+    function buildSampleValidation(fileName) {
+      const statusMap = {
+        structure: 'pass',
+        version: 'pass',
+        testPlan: 'pass',
+        threadGroups: 'pass',
+        samplers: 'pass',
+        config: 'warning',
+        listeners: 'warning',
+        assertions: 'warning',
+        timers: 'pass',
+        controllers: 'pass',
+        disabled: 'warning'
+      };
+
+      const inventory = [
+        ['Test Plan', 1, 'Pass', 'Root TestPlan and hashTree detected.'],
+        ['Thread Groups', 2, 'Pass', 'Checkout and login flows are executable.'],
+        ['HTTP Samplers', 28, 'Pass', 'Business transaction samplers detected.'],
+        ['Config Elements', 7, 'Warning', 'CSV data config exists, but headers need review.'],
+        ['Listeners', 4, 'Warning', 'Heavy listeners should be disabled for load execution.'],
+        ['Assertions', 5, 'Warning', 'Coverage missing for payment confirmation endpoint.'],
+        ['Timers', 6, 'Pass', 'Think-time timers detected.'],
+        ['Controllers', 9, 'Pass', 'Transaction controllers are available.'],
+        ['Disabled Components', 6, 'Warning', 'Disabled samplers and debug listeners found.']
+      ];
+
+      const findings = [
+        ['Medium', 'Config Elements', 'HTTP Header Manager does not include all production-like headers.', 'Review required headers and align with browser recording standard.'],
+        ['Medium', 'Listeners', 'View Results Tree and Summary Report listeners are enabled.', 'Disable heavy listeners before distributed load execution.'],
+        ['Medium', 'Assertions', 'Payment confirmation transaction has no response assertion.', 'Add response code and content assertion for critical transaction.'],
+        ['Low', 'Disabled Components', 'Six disabled components are present in the script.', 'Remove unused elements or mark them with documented reason.'],
+        ['Low', 'Naming Standard', 'Some samplers use recorded URL names instead of business transaction names.', 'Rename samplers for reporting and traceability.']
+      ];
+
+      const recommendations = [
+        'Move debug listeners to a separate troubleshooting version of the JMX and keep execution script listener-light.',
+        'Add assertions for all critical business transactions: login, product search, add to cart, checkout, payment, and confirmation.',
+        'Validate correlation candidates for session ID, CSRF token, cart ID, payment token, and dynamic customer identifiers.',
+        'Confirm CSV data file structure and variable names before script update starts.',
+        'Use the validation output as the entry checklist for the next stage: Script Update.'
+      ];
+
+      const pass = Object.values(statusMap).filter(s => s === 'pass').length;
+      const warning = Object.values(statusMap).filter(s => s === 'warning').length;
+      const fail = Object.values(statusMap).filter(s => s === 'fail').length;
+      const score = Math.round((pass / Object.values(statusMap).length) * 100 - warning * 2 - fail * 8);
+
+      return {
+        requestId: document.getElementById('requestId').value,
+        requestTitle: document.getElementById('requestTitle').value,
+        scriptId: document.getElementById('scriptId').value,
+        fileName,
+        expectedJMeterVersion: document.getElementById('jmeterVersion').value,
+        environment: document.getElementById('environment').value,
+        statusMap,
+        summary: { score, pass, warning, fail },
+        inventory,
+        findings,
+        recommendations,
+        approvalStatus: 'Pending Approval',
+        nextStage: 'Script Update'
+      };
+    }
+
+    function renderResults(result) {
+      renderChecklist(result.statusMap);
+      document.getElementById('score').textContent = result.summary.score + '%';
+      document.getElementById('passCount').textContent = result.summary.pass;
+      document.getElementById('warningCount').textContent = result.summary.warning;
+      document.getElementById('failCount').textContent = result.summary.fail;
+
+      document.getElementById('inventoryRows').innerHTML = result.inventory.map(row => `
+        <tr>
+          <td>${row[0]}</td>
+          <td>${row[1]}</td>
+          <td><span class="badge ${row[2].toLowerCase() === 'pass' ? 'pass' : 'warning'}">${row[2]}</span></td>
+          <td>${row[3]}</td>
+        </tr>`).join('');
+
+      document.getElementById('findingRows').innerHTML = result.findings.map(row => {
+        const severityClass = row[0] === 'Low' ? 'warning' : row[0] === 'High' || row[0] === 'Critical' ? 'fail' : 'warning';
+        return `
+          <tr>
+            <td><span class="badge ${severityClass}">${row[0]}</span></td>
+            <td>${row[1]}</td>
+            <td>${row[2]}</td>
+            <td>${row[3]}</td>
+          </tr>`;
+      }).join('');
+
+      document.getElementById('recommendationList').innerHTML = result.recommendations.map((rec, idx) => `
+        <div class="rec"><strong>Recommendation ${idx + 1}:</strong> ${rec}</div>
+      `).join('');
+    }
+
+    function showTab(id, el) {
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function approveScript() {
+      if (!validationResult) return;
+      validationResult.approvalStatus = 'Approved';
+      validationResult.approvedAt = new Date().toISOString();
+      document.getElementById('approvalTitle').textContent = 'Approval Gate: Approved';
+      document.getElementById('approvalText').textContent = 'JMeter script validation is approved. The next stage is now enabled.';
+      document.getElementById('nextStageBtn').disabled = false;
+      document.getElementById('approveBtn').disabled = true;
+      setPipeline(6);
+      document.getElementById('pipe6').classList.add('done');
+      toast('Validation approved');
+    }
+
+    function nextStage() {
+      toast('Moving to next stage: Script Update');
+    }
+
+    function exportValidationJson() {
+      if (!validationResult) {
+        validationResult = buildSampleValidation('sample_recorded_checkout_flow.jmx');
+      }
+      const blob = new Blob([JSON.stringify(validationResult, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${validationResult.scriptId}_validation_report.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('Validation JSON exported');
+    }
+
+    function loadSample() {
+      document.getElementById('requestId').value = 'PERF-REQ-1027';
+      document.getElementById('requestTitle').value = 'Customer Portal Checkout Performance Test';
+      document.getElementById('scriptId').value = 'JMX-SCR-003';
+      document.getElementById('targetTool').value = 'Apache JMeter';
+      document.getElementById('jmeterVersion').value = '5.6.x';
+      document.getElementById('environment').value = 'QA Performance';
+      toast('Sample metadata loaded');
+    }
+
+    function clearAll() {
+      validationResult = null;
+      renderChecklist();
+      document.getElementById('score').textContent = '--';
+      document.getElementById('passCount').textContent = '--';
+      document.getElementById('warningCount').textContent = '--';
+      document.getElementById('failCount').textContent = '--';
+      document.getElementById('inventoryRows').innerHTML = '';
+      document.getElementById('findingRows').innerHTML = '';
+      document.getElementById('recommendationList').innerHTML = '';
+      document.getElementById('approvalTitle').textContent = 'Approval Gate: Pending Validation';
+      document.getElementById('approvalText').textContent = 'Run JMX analysis before approval. Approval enables the next stage: Script Update.';
+      document.getElementById('approveBtn').disabled = true;
+      document.getElementById('nextStageBtn').disabled = true;
+      setPipeline(1);
+      toast('Demo reset');
+    }
+
+    function toast(message) {
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1800);
+    }
+
+    renderChecklist();
+  </script>
+</body>
+</html>

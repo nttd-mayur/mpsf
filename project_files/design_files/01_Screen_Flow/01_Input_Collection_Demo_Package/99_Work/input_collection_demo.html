@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Input Collection Module - Performance Testing Demo</title>
+  <style>
+    :root {
+      --blue: #1a73e8;
+      --blue-dark: #185abc;
+      --green: #188038;
+      --amber: #f9ab00;
+      --red: #d93025;
+      --surface: #ffffff;
+      --surface-2: #f8fafd;
+      --border: #dadce0;
+      --text: #202124;
+      --muted: #5f6368;
+      --shadow: 0 1px 2px rgba(60,64,67,.12), 0 8px 24px rgba(60,64,67,.12);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #f3f7ff 0%, #ffffff 42%);
+    }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 24px; }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, .6fr);
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 20px;
+    }
+    .hero-card, .status-card, .step-card, .output-card {
+      background: rgba(255,255,255,.94);
+      border: 1px solid rgba(218,220,224,.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .hero-card { padding: 32px; position: relative; overflow: hidden; }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      right: -80px; top: -90px;
+      width: 260px; height: 260px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(26,115,232,.16), rgba(26,115,232,0) 68%);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--blue-dark);
+      text-transform: uppercase;
+      background: #e8f0fe;
+      border-radius: 999px;
+      padding: 8px 12px;
+      margin-bottom: 16px;
+    }
+    h1 { margin: 0 0 12px; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; letter-spacing: -.03em; }
+    h2 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+    h3 { margin: 0 0 12px; font-size: 18px; }
+    p { color: var(--muted); line-height: 1.55; }
+    .hero-card p { max-width: 820px; font-size: 16px; margin: 0 0 18px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .chip { border: 1px solid #d2e3fc; background: #f8fbff; border-radius: 999px; color: #174ea6; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+    .status-card { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      border-radius: 999px;
+      background: #fef7e0;
+      color: #8a5600;
+      font-weight: 700;
+      padding: 8px 12px;
+      width: fit-content;
+    }
+    .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .metric { background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+    .metric strong { display: block; font-size: 28px; color: var(--text); }
+    .metric span { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .progress-track { height: 10px; border-radius: 999px; overflow: hidden; background: #e8eaed; }
+    .progress-bar { height: 100%; width: 0%; background: var(--blue); transition: width .25s ease; }
+    .main { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: start; }
+    .rail { position: sticky; top: 16px; display: grid; gap: 12px; }
+    .rail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+    .rail-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .rail-title b { font-size: 14px; }
+    .step-link {
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+      padding: 10px;
+      border-radius: 14px;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid transparent;
+    }
+    .step-link:hover { background: #f8fafd; border-color: #e8eaed; }
+    .step-index { width: 30px; height: 30px; border-radius: 10px; background: #e8eaed; display: grid; place-items: center; font-weight: 800; color: var(--muted); }
+    .step-link.approved .step-index { background: #e6f4ea; color: var(--green); }
+    .step-link span:nth-child(2) { font-size: 13px; line-height: 1.25; }
+    .dot { width: 9px; height: 9px; border-radius: 99px; background: #bdc1c6; }
+    .step-link.approved .dot { background: var(--green); }
+    .output-actions { display: grid; gap: 10px; }
+    button, .button-like {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      min-height: 44px;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+      font-family: inherit;
+    }
+    button:hover:not(:disabled), .button-like:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(60,64,67,.2); }
+    button:focus-visible, .button-like:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #aecbfa; outline-offset: 2px; }
+    button:disabled { cursor: not-allowed; opacity: .48; }
+    .primary { background: var(--blue); color: #fff; }
+    .primary:hover:not(:disabled) { background: var(--blue-dark); }
+    .secondary { background: #e8f0fe; color: var(--blue-dark); }
+    .ghost { background: #fff; color: var(--blue-dark); border: 1px solid #d2e3fc; }
+    .approve-btn { background: #f1f3f4; color: var(--text); }
+    .approve-btn.approved { background: #e6f4ea; color: var(--green); }
+    .danger-ghost { background: #fff; color: var(--red); border: 1px solid #fad2cf; }
+    .content-stack { display: grid; gap: 18px; }
+    .output-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .output-card { padding: 20px; display: grid; gap: 12px; }
+    .output-card .tag { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .step-card { overflow: hidden; }
+    .step-header {
+      display: flex;
+      gap: 16px;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid #edf0f2;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+    .step-title { display: flex; gap: 14px; align-items: flex-start; }
+    .step-badge { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 14px; display: grid; place-items: center; background: #e8f0fe; color: var(--blue); font-size: 18px; font-weight: 900; }
+    .step-card.approved .step-badge { background: #e6f4ea; color: var(--green); }
+    .step-header p { margin: 6px 0 0; font-size: 14px; max-width: 780px; }
+    .step-body { padding: 22px; display: grid; gap: 16px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .field { display: grid; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: 13px; color: #3c4043; font-weight: 700; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 12px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: -2px; }
+    .step-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 22px 22px; }
+    .approval-text { color: var(--muted); font-size: 13px; }
+    .approval-text.approved { color: var(--green); font-weight: 700; }
+    .footer-panel {
+      margin-top: 22px;
+      background: #f8fafd;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      max-width: 420px;
+      background: #202124;
+      color: #fff;
+      padding: 14px 16px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      transform: translateY(140%);
+      opacity: 0;
+      transition: transform .2s ease, opacity .2s ease;
+      z-index: 10;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .sr-only { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    @media (max-width: 1100px) {
+      .hero, .main, .output-grid { grid-template-columns: 1fr; }
+      .rail { position: static; }
+    }
+    @media (max-width: 720px) {
+      .shell { padding: 16px; }
+      .form-grid, .metric-grid { grid-template-columns: 1fr; }
+      .step-header, .step-actions, .footer-panel { flex-direction: column; align-items: stretch; }
+      button { width: 100%; }
+    }
+	
+   .header-logo {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      height: 50px;
+      width: auto;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero" aria-labelledby="page-title">
+	
+	
+      <section class="hero-card">
+        <div class="eyebrow">.   .     .   .    Performance Testing Script Factory Simulator</div>
+		<!-- Logo -->
+		<img src="..\Maca_Logo.png" alt="Logo" class="header-logo" />
+        <h1 id="page-title">Input Collection Module</h1>
+        <p>This demo collects performance test intake, scope, workload, environment, configuration, monitoring, and readiness data. Each step has an approval gate. The next stage remains locked until every step is approved.</p>
+        <div class="chip-row" aria-label="Output types">
+          <span class="chip">Steps 1-2 -> Word output</span>
+          <span class="chip">Steps 6-8 -> JSON template</span>
+          <span class="chip">8 approval gates</span>
+          <span class="chip">Next stage lock</span>
+        </div>
+      </section>
+      <aside class="status-card" aria-label="Workflow status">
+        <span class="status-pill" id="overallStatus">Pending approvals</span>
+        <div class="metric-grid">
+          <div class="metric"><strong id="approvedCount">0</strong><span>approved</span></div>
+          <div class="metric"><strong>8</strong><span>total steps</span></div>
+        </div>
+        <div>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0" aria-label="Approval progress">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <p class="hint" id="approvalHint">Approve all steps to enable the next stage.</p>
+        </div>
+		<a href="..\Load_Model\02_Generate_Load_Model.html" target="_blank" rel="noopener noreferrer">
+              <button id="nextStageTop" class="primary" disabled>Go to Next Stage</button>
+          </a>
+        <!-- <button class="primary" id="nextStageTop" disabled>Go to Next Stage</button> -->
+      </aside>
+    </header>
+
+    <main class="main">
+      <aside class="rail" aria-label="Step navigation and exports">
+        <div class="rail-card">
+          <div class="rail-title"><b>Steps</b><span class="hint" id="railCount">0/8</span></div>
+          <nav id="stepNav" aria-label="Input collection steps"></nav>
+        </div>
+        <div class="rail-card output-actions">
+          <div class="rail-title"><b>Outputs</b></div>
+          <button class="secondary" id="downloadWord" disabled>Download Word Output</button>
+          <p class="hint" id="wordHint">Approve Steps 1 and 2 to unlock.</p>
+          <button class="secondary" id="downloadJson" disabled>Download JSON Template</button>
+          <p class="hint" id="jsonHint">Approve Steps 6, 7 and 8 to unlock.</p>
+          <button class="danger-ghost" id="resetApprovals">Reset approvals</button>
+        </div>
+      </aside>
+
+      <section class="content-stack">
+    <!--    <div class="output-grid" aria-label="Output summary">
+          <article class="output-card">
+            <span class="tag">Word handoff</span>
+            <h2>Steps 1 and 2</h2>
+            <p>The Word output uses the request intake and application scope fields to create a review-ready intake brief for stakeholders.</p>
+          </article>
+          <article class="output-card">
+            <span class="tag">JSON handoff</span>
+            <h2>Steps 6 to 8</h2>
+            <p>The JSON output captures executable configuration, monitoring, reporting, readiness, owner, and approval data.</p>
+          </article>
+        </div>
+    -->
+        <article class="step-card" id="step-1" data-step="1">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">1</div>
+              <div><h2>Receive Performance Test Request</h2><p>Capture requester intent, business driver, date constraints, and the decision the performance test must support.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="1">Approve Step 1</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field"><label for="requestId">Request ID</label><input id="requestId" value="PTR-2026-001" /></div>
+              <div class="field"><label for="requestTitle">Request title</label><input id="requestTitle" value="Retail Checkout Performance Readiness" /></div>
+              <div class="field"><label for="requesterTeam">Requester / team</label><input id="requesterTeam" value="Platform QA - Performance Engineering" /></div>
+              <div class="field"><label for="businessOwner">Business owner</label><input id="businessOwner" value="Commerce Product Operations" /></div>
+              <div class="field"><label for="targetWindow">Target test window</label><input id="targetWindow" value="2026-06-15 to 2026-06-19" /></div>
+              <div class="field"><label for="priority">Priority</label><select id="priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
+              <div class="field full"><label for="businessDriver">Primary business driver</label><textarea id="businessDriver">Validate checkout stability before the summer campaign launch.</textarea></div>
+              <div class="field full"><label for="expectedDecision">Expected decision from test</label><textarea id="expectedDecision">Approve production readiness, identify bottlenecks, and document remediation owners.</textarea></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="1">Not approved</span><span class="hint">Feeds the Word output.</span></div>
+        </article>
+
+        <article class="step-card" id="step-2" data-step="2">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">2</div>
+              <div><h2>Define Application and Test Scope</h2><p>Confirm the application boundary, in-scope journeys, out-of-scope areas, assumptions, and completion criteria.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="2">Approve Step 2</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field"><label for="appName">Application name</label><input id="appName" value="Retail Checkout API and Web Checkout" /></div>
+              <div class="field"><label for="appDomain">Application tier / domain</label><input id="appDomain" value="Customer-facing commerce journey" /></div>
+              <div class="field full"><label for="inScope">In-scope components</label><textarea id="inScope">Cart service, payment authorization, inventory lookup, order submission, confirmation page.</textarea></div>
+              <div class="field full"><label for="outScope">Out-of-scope components</label><textarea id="outScope">Refund workflow, fulfillment batch jobs, admin portal, analytics exports.</textarea></div>
+              <div class="field full"><label for="criticalJourneys">Critical user journeys</label><textarea id="criticalJourneys">Browse to cart, apply promo, authorize payment, submit order, receive confirmation.</textarea></div>
+              <div class="field"><label for="entryCriteria">Entry criteria</label><textarea id="entryCriteria">Stable test environment, test data loaded, monitoring enabled, access granted to test tools.</textarea></div>
+              <div class="field"><label for="exitCriteria">Exit criteria</label><textarea id="exitCriteria">P95 response time and error rate targets met for all in-scope journeys; defects triaged.</textarea></div>
+              <div class="field full"><label for="scopeAssumptions">Assumptions / constraints</label><textarea id="scopeAssumptions">Third-party payment sandbox has agreed capacity; non-production inventory latency may vary.</textarea></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="2">Not approved</span><span class="hint">Feeds the Word output.</span></div>
+        </article>
+
+        <article class="step-card" id="step-3" data-step="3">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">3</div>
+              <div><h2>Capture Business Journeys and User Behavior</h2><p>Convert business activity into measurable journeys, usage patterns, think time, and transaction distribution.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="3">Approve Step 3</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field full"><label for="journeyList">Top business journeys</label><textarea id="journeyList">Search product, add to cart, checkout, payment authorization, order confirmation.</textarea></div>
+              <div class="field"><label for="userSegments">User segments</label><textarea id="userSegments">Guest shoppers, returning users, loyalty users, mobile web users.</textarea></div>
+              <div class="field"><label for="trafficMix">Traffic mix</label><textarea id="trafficMix">Checkout 60%, browse 25%, cart update 10%, promo validation 5%.</textarea></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="3">Not approved</span><span class="hint">Used for scenario modeling.</span></div>
+        </article>
+
+        <article class="step-card" id="step-4" data-step="4">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">4</div>
+              <div><h2>Collect Workload, Volume, and SLA Targets</h2><p>Record target concurrency, arrival rate, duration, transaction volume, and measurable pass or fail thresholds.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="4">Approve Step 4</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field"><label for="concurrentUsers">Peak concurrent users</label><input id="concurrentUsers" value="500" /></div>
+              <div class="field"><label for="throughputTarget">Target throughput / minute</label><input id="throughputTarget" value="1200" /></div>
+              <div class="field"><label for="testDuration">Steady state duration</label><input id="testDuration" value="60 minutes" /></div>
+              <div class="field"><label for="responseSla">P95 response SLA</label><input id="responseSla" value="750 ms" /></div>
+              <div class="field full"><label for="errorBudget">Error budget / thresholds</label><textarea id="errorBudget">Maximum 1% business transaction errors; no critical user journey outage during steady state.</textarea></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="4">Not approved</span><span class="hint">Used for workload calibration.</span></div>
+        </article>
+
+        <article class="step-card" id="step-5" data-step="5">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">5</div>
+              <div><h2>Collect Environment, Data, and Dependency Details</h2><p>Identify test environment readiness, test data, service dependencies, access, account provisioning, and constraints.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="5">Approve Step 5</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field"><label for="environmentName">Environment</label><input id="environmentName" value="Perf-QA blue environment" /></div>
+              <div class="field"><label for="authModel">Authentication model</label><input id="authModel" value="OAuth test tenant" /></div>
+              <div class="field full"><label for="dependencies">Dependencies</label><textarea id="dependencies">Payment sandbox, inventory API, promotions service, customer identity, order database.</textarea></div>
+              <div class="field full"><label for="dataPlan">Test data plan</label><textarea id="dataPlan">Seed synthetic users, carts, promo codes, inventory SKUs, and payment sandbox tokens before each run.</textarea></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="5">Not approved</span><span class="hint">Used for readiness validation.</span></div>
+        </article>
+
+        <article class="step-card" id="step-6" data-step="6">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">6</div>
+              <div><h2>Define Performance Test Configuration</h2><p>Set test type, scenario mix, load profile, duration, data usage, and pass or fail criteria for execution.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="6">Approve Step 6</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field"><label for="testType">Test type</label><select id="testType"><option>Load</option><option>Stress</option><option>Soak</option><option>Spike</option><option>Scalability</option></select></div>
+              <div class="field"><label for="tooling">Preferred tool</label><input id="tooling" value="JMeter or k6" /></div>
+              <div class="field"><label for="scenarioId">Primary scenario ID</label><input id="scenarioId" value="SCN-001" /></div>
+              <div class="field"><label for="scenarioShare">Traffic share percent</label><input id="scenarioShare" value="60" /></div>
+              <div class="field"><label for="rampUp">Ramp-up minutes</label><input id="rampUp" value="20" /></div>
+              <div class="field"><label for="steadyState">Steady state minutes</label><input id="steadyState" value="60" /></div>
+              <div class="field full"><label for="criteria">Acceptance criteria</label><textarea id="criteria">P95 <= 750 ms, error rate <= 1%, CPU <= 75%, memory <= 80% during steady state.</textarea></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="6">Not approved</span><span class="hint">Feeds the JSON output.</span></div>
+        </article>
+
+        <article class="step-card" id="step-7" data-step="7">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">7</div>
+              <div><h2>Define Monitoring and Reporting Configuration</h2><p>Specify dashboards, telemetry, metrics, alert thresholds, and reporting expectations for each execution run.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="7">Approve Step 7</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field"><label for="monitoringTools">Monitoring tools</label><textarea id="monitoringTools">APM, cloud metrics, synthetic logs, load generator telemetry.</textarea></div>
+              <div class="field"><label for="dashboardName">Dashboard name</label><input id="dashboardName" value="Checkout Performance Overview" /></div>
+              <div class="field full"><label for="metricList">Required metrics</label><textarea id="metricList">Transaction response time percentiles, throughput, error rate, CPU, memory, database latency, downstream API latency.</textarea></div>
+              <div class="field full"><label for="reportCadence">Reporting cadence</label><textarea id="reportCadence">Execution summary within one business day after each run with bottleneck analysis and owners.</textarea></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="7">Not approved</span><span class="hint">Feeds the JSON output.</span></div>
+        </article>
+
+        <article class="step-card" id="step-8" data-step="8">
+          <div class="step-header">
+            <div class="step-title">
+              <div class="step-badge">8</div>
+              <div><h2>Review Readiness and Handoff</h2><p>Finalize owners, execution window, risks, approval status, and handoff decision before the next stage starts.</p></div>
+            </div>
+            <button class="approve-btn" data-approve="8">Approve Step 8</button>
+          </div>
+          <div class="step-body">
+            <div class="form-grid">
+              <div class="field"><label for="executionStart">Execution start</label><input id="executionStart" value="2026-06-15T09:00:00+02:00" /></div>
+              <div class="field"><label for="executionEnd">Execution end</label><input id="executionEnd" value="2026-06-19T18:00:00+02:00" /></div>
+              <div class="field"><label for="perfLead">Performance test lead</label><input id="perfLead" value="TBD" /></div>
+              <div class="field"><label for="environmentOwner">Environment owner</label><input id="environmentOwner" value="TBD" /></div>
+              <div class="field full"><label for="risks">Known risks and mitigations</label><textarea id="risks">Payment sandbox throttling can distort production-like latency. Confirm sandbox capacity and add monitoring around payment gateway calls.</textarea></div>
+              <div class="field full"><label for="handoffDecision">Handoff decision</label><select id="handoffDecision"><option>pending</option><option>approved</option><option>approved with risks</option><option>blocked</option></select></div>
+            </div>
+          </div>
+          <div class="step-actions"><span class="approval-text" data-approval-text="8">Not approved</span><span class="hint">Feeds the JSON output and next-stage readiness.</span></div>
+        </article>
+
+        <div class="footer-panel">
+          <div>
+            <h2>Next stage readiness</h2>
+            <p id="nextStageCopy">The next stage is locked until all eight Input Collection steps are approved.</p>
+          </div>
+		  <a href="..\Load_Model\02_Generate_Load_Model.html" target="_blank" rel="noopener noreferrer">
+              <button id="nextStageBottom" class="primary" disabled>Go to Next Stage</button>
+          </a>
+          <!-- <button class="primary" id="nextStageBottom" disabled>Go to Next Stage</button> -->
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const steps = [
+      'Receive Performance Test Request',
+      'Define Application and Test Scope',
+      'Capture Business Journeys and User Behavior',
+      'Collect Workload, Volume, and SLA Targets',
+      'Collect Environment, Data, and Dependency Details',
+      'Define Performance Test Configuration',
+      'Define Monitoring and Reporting Configuration',
+      'Review Readiness and Handoff'
+    ];
+
+    const approvals = Object.fromEntries(steps.map((_, index) => [String(index + 1), false]));
+
+    function value(id) {
+      const element = document.getElementById(id);
+      return element ? element.value.trim() : '';
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    function renderNav() {
+      const nav = document.getElementById('stepNav');
+      nav.innerHTML = steps.map((label, index) => {
+        const number = index + 1;
+        return `<a class="step-link" data-nav-step="${number}" href="#step-${number}"><span class="step-index">${number}</span><span>${label}</span><span class="dot" aria-hidden="true"></span></a>`;
+      }).join('');
+    }
+
+    function updateState() {
+      const approvedCount = Object.values(approvals).filter(Boolean).length;
+      const allApproved = approvedCount === steps.length;
+      const wordReady = approvals['1'] && approvals['2'];
+      const jsonReady = approvals['6'] && approvals['7'] && approvals['8'];
+      document.getElementById('approvedCount').textContent = approvedCount;
+      document.getElementById('railCount').textContent = `${approvedCount}/8`;
+      document.getElementById('progressBar').style.width = `${(approvedCount / steps.length) * 100}%`;
+      document.querySelector('.progress-track').setAttribute('aria-valuenow', String(approvedCount));
+      document.getElementById('overallStatus').textContent = allApproved ? 'Ready for next stage' : 'Pending approvals';
+      document.getElementById('overallStatus').style.background = allApproved ? '#e6f4ea' : '#fef7e0';
+      document.getElementById('overallStatus').style.color = allApproved ? '#188038' : '#8a5600';
+      document.getElementById('approvalHint').textContent = allApproved ? 'All approvals are complete.' : `Approve ${steps.length - approvedCount} more step${steps.length - approvedCount === 1 ? '' : 's'} to unlock the next stage.`;
+      document.getElementById('nextStageCopy').textContent = allApproved ? 'All steps are approved. You can now proceed to the next stage.' : 'The next stage is locked until all eight Input Collection steps are approved.';
+
+      document.querySelectorAll('[id^="nextStage"]').forEach(button => { button.disabled = !allApproved; });
+      document.getElementById('downloadWord').disabled = !wordReady;
+      document.getElementById('wordHint').textContent = wordReady ? 'Ready. Downloads a Word document generated from Steps 1 and 2.' : 'Approve Steps 1 and 2 to unlock.';
+      document.getElementById('downloadJson').disabled = !jsonReady;
+      document.getElementById('jsonHint').textContent = jsonReady ? 'Ready. Downloads a JSON template generated from Steps 6 to 8.' : 'Approve Steps 6, 7 and 8 to unlock.';
+
+      steps.forEach((_, index) => {
+        const number = String(index + 1);
+        const approved = approvals[number];
+        const card = document.querySelector(`[data-step="${number}"]`);
+        const button = document.querySelector(`[data-approve="${number}"]`);
+        const nav = document.querySelector(`[data-nav-step="${number}"]`);
+        const text = document.querySelector(`[data-approval-text="${number}"]`);
+        card.classList.toggle('approved', approved);
+        button.classList.toggle('approved', approved);
+        button.textContent = approved ? `Approved Step ${number}` : `Approve Step ${number}`;
+        button.setAttribute('aria-pressed', approved ? 'true' : 'false');
+        nav.classList.toggle('approved', approved);
+        text.classList.toggle('approved', approved);
+        text.textContent = approved ? 'Approved' : 'Not approved';
+      });
+    }
+
+    function attachApprovalHandlers() {
+      document.querySelectorAll('[data-approve]').forEach(button => {
+        button.addEventListener('click', () => {
+          const step = button.getAttribute('data-approve');
+          approvals[step] = !approvals[step];
+          updateState();
+          showToast(approvals[step] ? `Step ${step} approved.` : `Step ${step} approval removed.`);
+        });
+      });
+      document.getElementById('resetApprovals').addEventListener('click', () => {
+        Object.keys(approvals).forEach(key => approvals[key] = false);
+        updateState();
+        showToast('All approvals reset.');
+      });
+      document.querySelectorAll('[id^="nextStage"]').forEach(button => {
+        button.addEventListener('click', () => {
+          if (Object.values(approvals).every(Boolean)) showToast('Next stage enabled: Test Design and Scripting can begin.');
+        });
+      });
+    }
+
+    function escapeXml(input) {
+      return String(input || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function wordText(value) {
+      const lines = String(value || '').split(/\r?\n/);
+      return lines.map((line, index) => `${index ? '<w:br/>' : ''}<w:t xml:space="preserve">${escapeXml(line)}</w:t>`).join('');
+    }
+
+    function paragraph(text, style) {
+      const styleXml = style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : '';
+      return `<w:p>${styleXml}<w:r>${wordText(text)}</w:r></w:p>`;
+    }
+
+    function tableCell(text, width, shaded) {
+      const shade = shaded ? '<w:shd w:val="clear" w:color="auto" w:fill="E8F0FE"/>' : '';
+      return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${shade}</w:tcPr>${paragraph(text)}</w:tc>`;
+    }
+
+    function tableRow(label, text, header) {
+      return `<w:tr>${tableCell(label, 3200, header)}${tableCell(text, 6100, header)}</w:tr>`;
+    }
+
+    function wordTable(rows) {
+      const borders = '<w:tblBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="DADCE0"/><w:left w:val="single" w:sz="6" w:space="0" w:color="DADCE0"/><w:bottom w:val="single" w:sz="6" w:space="0" w:color="DADCE0"/><w:right w:val="single" w:sz="6" w:space="0" w:color="DADCE0"/><w:insideH w:val="single" w:sz="6" w:space="0" w:color="DADCE0"/><w:insideV w:val="single" w:sz="6" w:space="0" w:color="DADCE0"/></w:tblBorders>';
+      return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>${borders}</w:tblPr><w:tblGrid><w:gridCol w:w="3200"/><w:gridCol w:w="6100"/></w:tblGrid>${rows.join('')}</w:tbl>`;
+    }
+
+    function buildDocxDocumentXml() {
+      const step1Rows = [
+        tableRow('Input field', 'Collected value', true),
+        tableRow('Request ID', value('requestId')),
+        tableRow('Request title', value('requestTitle')),
+        tableRow('Requester / team', value('requesterTeam')),
+        tableRow('Business owner', value('businessOwner')),
+        tableRow('Target test window', value('targetWindow')),
+        tableRow('Priority', value('priority')),
+        tableRow('Primary business driver', value('businessDriver')),
+        tableRow('Expected decision from test', value('expectedDecision'))
+      ];
+      const step2Rows = [
+        tableRow('Input field', 'Collected value', true),
+        tableRow('Application name', value('appName')),
+        tableRow('Application tier / domain', value('appDomain')),
+        tableRow('In-scope components', value('inScope')),
+        tableRow('Out-of-scope components', value('outScope')),
+        tableRow('Critical user journeys', value('criticalJourneys')),
+        tableRow('Entry criteria', value('entryCriteria')),
+        tableRow('Exit criteria', value('exitCriteria')),
+        tableRow('Assumptions / constraints', value('scopeAssumptions'))
+      ];
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    ${paragraph('Input Collection Output - Steps 1 and 2', 'Title')}
+    ${paragraph('Generated from the current demo inputs for request intake and application scope definition.')}
+    ${paragraph('Step 1 - Receive Performance Test Request', 'Heading1')}
+    ${wordTable(step1Rows)}
+    ${paragraph('Step 2 - Define Application and Test Scope', 'Heading1')}
+    ${wordTable(step2Rows)}
+    ${paragraph('Approval checkpoint', 'Heading1')}
+    ${paragraph('Required reviewers: requester, application owner, performance engineering lead, and environment owner.')}
+    ${paragraph('Next action: approve Steps 1 and 2 in the Input Collection demo to finalize this handoff.')}
+    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="900" w:right="900" w:bottom="900" w:left="900" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>
+  </w:body>
+</w:document>`;
+    }
+
+    function stylesXml() {
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="20"/></w:rPr></w:style>
+  <w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:color w:val="1A73E8"/><w:sz w:val="34"/></w:rPr></w:style>
+  <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:color w:val="202124"/><w:sz w:val="26"/></w:rPr></w:style>
+</w:styles>`;
+    }
+
+    function coreXml() {
+      const now = new Date().toISOString();
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>Input Collection Output - Steps 1 and 2</dc:title><dc:creator>Input Collection Demo</dc:creator><cp:lastModifiedBy>Input Collection Demo</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified>
+</cp:coreProperties>`;
+    }
+
+    const crcTable = (() => {
+      const table = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        table[n] = c >>> 0;
+      }
+      return table;
+    })();
+
+    function crc32(bytes) {
+      let crc = 0 ^ -1;
+      for (let i = 0; i < bytes.length; i++) crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xff];
+      return (crc ^ -1) >>> 0;
+    }
+
+    function dosDateTime(date) {
+      const year = Math.max(date.getFullYear(), 1980);
+      const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
+      const dosDate = ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+      return { dosTime, dosDate };
+    }
+
+    function pushU16(out, value) { out.push(value & 255, (value >>> 8) & 255); }
+    function pushU32(out, value) { out.push(value & 255, (value >>> 8) & 255, (value >>> 16) & 255, (value >>> 24) & 255); }
+    function appendBytes(out, bytes) { for (let i = 0; i < bytes.length; i++) out.push(bytes[i]); }
+
+    function makeZip(files) {
+      const encoder = new TextEncoder();
+      const now = dosDateTime(new Date());
+      const local = [];
+      const central = [];
+      let offset = 0;
+      files.forEach(file => {
+        const nameBytes = encoder.encode(file.name);
+        const contentBytes = encoder.encode(file.content);
+        const crc = crc32(contentBytes);
+        const localHeader = [];
+        pushU32(localHeader, 0x04034b50); pushU16(localHeader, 20); pushU16(localHeader, 0); pushU16(localHeader, 0);
+        pushU16(localHeader, now.dosTime); pushU16(localHeader, now.dosDate); pushU32(localHeader, crc); pushU32(localHeader, contentBytes.length); pushU32(localHeader, contentBytes.length);
+        pushU16(localHeader, nameBytes.length); pushU16(localHeader, 0); appendBytes(localHeader, nameBytes);
+        appendBytes(local, localHeader); appendBytes(local, contentBytes);
+
+        const centralHeader = [];
+        pushU32(centralHeader, 0x02014b50); pushU16(centralHeader, 20); pushU16(centralHeader, 20); pushU16(centralHeader, 0); pushU16(centralHeader, 0);
+        pushU16(centralHeader, now.dosTime); pushU16(centralHeader, now.dosDate); pushU32(centralHeader, crc); pushU32(centralHeader, contentBytes.length); pushU32(centralHeader, contentBytes.length);
+        pushU16(centralHeader, nameBytes.length); pushU16(centralHeader, 0); pushU16(centralHeader, 0); pushU16(centralHeader, 0); pushU16(centralHeader, 0); pushU32(centralHeader, 0); pushU32(centralHeader, offset);
+        appendBytes(centralHeader, nameBytes); appendBytes(central, centralHeader);
+        offset += localHeader.length + contentBytes.length;
+      });
+      const end = [];
+      pushU32(end, 0x06054b50); pushU16(end, 0); pushU16(end, 0); pushU16(end, files.length); pushU16(end, files.length); pushU32(end, central.length); pushU32(end, local.length); pushU16(end, 0);
+      return new Uint8Array([...local, ...central, ...end]);
+    }
+
+    function buildDocxBlob() {
+      const files = [
+        { name: '[Content_Types].xml', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>' },
+        { name: '_rels/.rels', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>' },
+        { name: 'word/_rels/document.xml.rels', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+        { name: 'word/document.xml', content: buildDocxDocumentXml() },
+        { name: 'word/styles.xml', content: stylesXml() },
+        { name: 'docProps/core.xml', content: coreXml() },
+        { name: 'docProps/app.xml', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Input Collection Demo</Application></Properties>' }
+      ];
+      const zipBytes = makeZip(files);
+      return new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    }
+
+    function buildJsonOutput() {
+      return {
+        module: 'Input Collection',
+        templateName: 'Performance Test Input Collection - Steps 6 to 8 JSON Output',
+        version: '1.0',
+        generatedAt: new Date().toISOString(),
+        generatedFromSteps: [6, 7, 8],
+        step6_testConfiguration: {
+          testType: value('testType'),
+          preferredTool: value('tooling'),
+          scenarioMix: [{
+            scenarioId: value('scenarioId'),
+            businessFlow: value('criticalJourneys'),
+            trafficSharePercent: Number(value('scenarioShare')) || value('scenarioShare'),
+            targetVirtualUsers: Number(value('concurrentUsers')) || value('concurrentUsers'),
+            targetThroughputPerMinute: Number(value('throughputTarget')) || value('throughputTarget'),
+            rampUpMinutes: Number(value('rampUp')) || value('rampUp'),
+            steadyStateMinutes: Number(value('steadyState')) || value('steadyState')
+          }],
+          dataStrategy: {
+            testDataSource: value('dataPlan'),
+            environment: value('environmentName')
+          },
+          acceptanceCriteria: value('criteria')
+        },
+        step7_monitoringAndReporting: {
+          monitoringTools: value('monitoringTools').split(',').map(item => item.trim()).filter(Boolean),
+          dashboardName: value('dashboardName'),
+          requiredMetrics: value('metricList').split(',').map(item => item.trim()).filter(Boolean),
+          reportingCadence: value('reportCadence')
+        },
+        step8_readinessAndHandoff: {
+          executionWindow: { start: value('executionStart'), end: value('executionEnd') },
+          owners: {
+            performanceTestLead: value('perfLead'),
+            applicationOwner: value('businessOwner'),
+            environmentOwner: value('environmentOwner')
+          },
+          knownRisksAndMitigations: value('risks'),
+          approvalState: {
+            step6: approvals['6'] ? 'approved' : 'pending',
+            step7: approvals['7'] ? 'approved' : 'pending',
+            step8: approvals['8'] ? 'approved' : 'pending'
+          },
+          handoffDecision: value('handoffDecision')
+        }
+      };
+    }
+
+    function downloadBlob(blob, fileName) {
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    document.getElementById('downloadWord').addEventListener('click', () => {
+      downloadBlob(buildDocxBlob(), 'Performance_Input_Collection_Steps_1_2.docx');
+      showToast('Word output generated from Steps 1 and 2.');
+    });
+
+    document.getElementById('downloadJson').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(buildJsonOutput(), null, 2)], { type: 'application/json' });
+      downloadBlob(blob, 'Performance_Input_Collection_Steps_6_8_Template.json');
+      showToast('JSON template generated from Steps 6 to 8.');
+    });
+
+    renderNav();
+    attachApprovalHandlers();
+    updateState();
+  </script>
+</body>
+</html>

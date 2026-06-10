@@ -1,0 +1,1937 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Load Model Generation - Demo</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --ink: #111827;
+      --muted: #64748b;
+      --line: #dbe3ef;
+      --primary: #1d4ed8;
+      --primary-2: #2563eb;
+      --primary-soft: #dbeafe;
+      --success: #047857;
+      --success-soft: #d1fae5;
+      --warning: #b45309;
+      --warning-soft: #fef3c7;
+      --danger: #b91c1c;
+      --danger-soft: #fee2e2;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 280px);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    .shell {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border: 1px solid rgba(29, 78, 216, 0.18);
+      border-radius: 999px;
+      color: var(--primary);
+      background: rgba(219, 234, 254, 0.7);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+
+    .hero p {
+      max-width: 780px;
+      color: var(--muted);
+      margin: 12px 0 0;
+      font-size: 15px;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: 320px;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 750;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: 140ms ease;
+      white-space: nowrap;
+      min-height: 40px;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
+    }
+
+    .btn:active:not(:disabled) { transform: translateY(0); }
+
+    .btn.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn.success {
+      border-color: var(--success);
+      background: var(--success);
+      color: #ffffff;
+    }
+
+    .btn.warning {
+      border-color: #f59e0b;
+      background: #f59e0b;
+      color: #111827;
+    }
+
+    .btn.ghost {
+      background: transparent;
+    }
+
+    .btn.linklike {
+      border-color: transparent;
+      background: transparent;
+      color: var(--primary);
+      padding-inline: 4px;
+      min-height: unset;
+      box-shadow: none !important;
+    }
+
+    .btn.danger {
+      border-color: var(--danger);
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .btn:disabled {
+      opacity: 0.46;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0 18px;
+    }
+
+    .step-card {
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(219, 227, 239, 0.9);
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      min-height: 88px;
+    }
+
+    .step-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .step-card.done .step-num {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .step-card.pending .step-num {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .step-card strong { display: block; font-size: 14px; }
+    .step-card span { color: var(--muted); font-size: 12px; display: block; margin-top: 3px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-header h2 { font-size: 19px; }
+    .panel-header h3 { font-size: 16px; }
+
+    .panel-header .sub {
+      color: var(--muted);
+      margin-top: 3px;
+      font-size: 12px;
+    }
+
+    .panel-body { padding: 20px; }
+
+    .side-stack { display: grid; gap: 14px; }
+
+    .context-field {
+      display: grid;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+
+    .context-field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .readonly-value {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 10px 11px;
+      border-radius: 12px;
+      min-height: 40px;
+      font-weight: 800;
+      color: #0f172a;
+      overflow-wrap: anywhere;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: #334155;
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid var(--line);
+    }
+
+    .badge.success { background: var(--success-soft); color: var(--success); border-color: #a7f3d0; }
+    .badge.warning { background: var(--warning-soft); color: var(--warning); border-color: #fde68a; }
+    .badge.primary { background: var(--primary-soft); color: var(--primary); border-color: #bfdbfe; }
+    .badge.danger { background: var(--danger-soft); color: var(--danger); border-color: #fecaca; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      padding: 0 20px;
+      background: #ffffff;
+      overflow-x: auto;
+    }
+
+    .tab {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 850;
+      padding: 15px 8px 13px;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-weight: 800;
+      color: #334155;
+      font-size: 12px;
+    }
+
+    .field .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--ink);
+      border-radius: 12px;
+      min-height: 42px;
+      padding: 10px 11px;
+      outline: none;
+      transition: border 120ms ease, box-shadow 120ms ease;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(37, 99, 235, 0.75);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
+    }
+
+    input[readonly] {
+      background: var(--panel-2);
+      color: #334155;
+    }
+
+    .section-title {
+      margin: 24px 0 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title:first-child { margin-top: 0; }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .section-title p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .check-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .check-card input { width: auto; min-height: auto; margin-top: 2px; }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: auto;
+      background: #ffffff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+
+    td input, td select {
+      min-height: 36px;
+      padding: 8px 9px;
+      border-radius: 10px;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: #475569;
+    }
+
+    .icon-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .icon-btn.delete { color: var(--danger); }
+
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .action-cluster {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .alert {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 14px;
+      padding: 12px 14px;
+      color: #334155;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .alert.warning { background: var(--warning-soft); border-color: #fde68a; color: #7c2d12; }
+    .alert.success { background: var(--success-soft); border-color: #a7f3d0; color: #064e3b; }
+    .alert.danger { background: var(--danger-soft); border-color: #fecaca; color: #7f1d1d; }
+    .alert.primary { background: var(--primary-soft); border-color: #bfdbfe; color: #1e3a8a; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 26px;
+      line-height: 1.15;
+      letter-spacing: -0.04em;
+      margin-top: 5px;
+    }
+
+    .metric small {
+      display: block;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .approval-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .next-stage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stage-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--panel-2);
+      min-height: 148px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .stage-card h4 { margin: 0; font-size: 15px; }
+    .stage-card p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .status-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0 0;
+      flex-wrap: wrap;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: min(420px, calc(100% - 36px));
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.24);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: 180ms ease;
+      z-index: 30;
+      font-weight: 750;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hidden { display: none !important; }
+
+    .muted { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .nowrap { white-space: nowrap; }
+
+    @media (max-width: 1080px) {
+      .hero { grid-template-columns: 1fr; }
+      .header-actions { justify-content: flex-start; min-width: 0; }
+      .workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid { grid-template-columns: 1fr; }
+      .form-grid, .form-grid.two, .check-grid, .metrics, .approval-grid, .next-stage-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell { width: min(100% - 20px, 1440px); padding-top: 18px; }
+      .workflow, .form-grid, .form-grid.two, .check-grid, .metrics, .approval-grid, .next-stage-grid {
+        grid-template-columns: 1fr;
+      }
+      .panel-header { align-items: flex-start; flex-direction: column; }
+      .tabs { padding-inline: 12px; }
+      .panel-body { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">M Performance Testing Script Factory - Demo</div>
+        <h1>Load Model Generation</h1>
+        <p>
+          Collect performance requirements, workload assumptions, volume details and script mapping, then generate, save, export, and approve a reusable load model for downstream performance test design activities.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="btnLoadSaved">Load Saved</button>
+        <button class="btn" id="btnResetDemo">Reset Demo</button>
+        <button class="btn primary" id="btnGenerateTop">Generate Load Model</button>
+		
+      </div>
+    </section>
+
+    <section class="workflow" aria-label="Workflow status">
+      <div class="step-card done" id="stepInput">
+        <div class="step-num">1</div>
+        <div><strong>Input Collection</strong><span>Request context and script IDs carried forward.</span></div>
+      </div>
+      <div class="step-card" id="stepCollect">
+        <div class="step-num">2</div>
+        <div><strong>Load Model Collection</strong><span>Requirements, assumptions and workload volumes.</span></div>
+      </div>
+      <div class="step-card pending" id="stepGenerate">
+        <div class="step-num">3</div>
+        <div><strong>Generated Load Model</strong><span>TPS, volumes, concurrency and scenario mix.</span></div>
+      </div>
+      <div class="step-card pending" id="stepApprove">
+        <div class="step-num">4</div>
+        <div><strong>Approval and Handoff</strong><span>Approve and unlock next-stage functions.</span></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <aside class="side-stack">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Carry-forward Context</h3>
+              <div class="sub">From Input Collection screen</div>
+            </div>
+            <span class="badge primary" id="contextSourceBadge">Demo</span>
+          </div>
+          <div class="panel-body">
+            <div class="context-field">
+              <label for="requestId">Request ID</label>
+              <input id="requestId" type="text" readonly />
+            </div>
+            <div class="context-field">
+              <label for="requestTitle">Request Title</label>
+              <input id="requestTitle" type="text" readonly />
+            </div>
+            <div class="context-field">
+              <label>Script IDs</label>
+              <div id="scriptChipRow" class="chip-row"></div>
+            </div>
+            <div class="alert primary">
+              <div><strong>Demo integration rule:</strong><br />This page reads <span class="mono">requestId</span>, <span class="mono">requestTitle</span>, and <span class="mono">scriptIds</span> from URL parameters, then falls back to <span class="mono">localStorage.inputCollection</span>, then demo defaults.</div>
+            </div>
+            <button class="btn" id="btnSeedInput" style="width:100%;">Seed Input Collection Demo Data</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Collection Status</h3>
+              <div class="sub">Local demo persistence</div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="status-line"><span class="muted">Collection</span><span id="collectionStatus" class="badge warning">Unsaved</span></div>
+            <div class="status-line"><span class="muted">Generated model</span><span id="modelStatus" class="badge">Not generated</span></div>
+            <div class="status-line"><span class="muted">Approval</span><span id="approvalStatus" class="badge">Not approved</span></div>
+            <div class="status-line"><span class="muted">Last action</span><span id="lastAction" class="muted mono">-</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Load Model Workspace</h2>
+            <div class="sub">Capture, generate, review, approve, and hand off.</div>
+          </div>
+          <div class="action-cluster">
+            <button class="btn" id="btnSaveCollectionHeader">Save Collection</button>
+            <button class="btn" id="btnExportCollectionHeader">Export Collection JSON</button>
+          </div>
+        </div>
+
+        <nav class="tabs" aria-label="Load model tabs">
+          <button class="tab active" data-tab="collectionTab">1. Collection</button>
+          <button class="tab" data-tab="generatedTab">2. Generated Load Model</button>
+          <button class="tab" data-tab="approvalTab">3. Approval and Next Stage</button>
+        </nav>
+
+        <div id="collectionTab" class="tab-content active">
+          <div class="panel-body">
+            <form id="loadModelForm">
+              <div class="section-title">
+                <div>
+                  <h3>Performance Requirements</h3>
+                  <p>Capture service-level objectives and test execution boundaries.</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="targetResponseP95">Target P95 response time (sec)</label>
+                  <input id="targetResponseP95" name="targetResponseP95" type="number" min="0" step="0.1" value="2.0" />
+                </div>
+                <div class="field">
+                  <label for="targetThroughput">Target throughput (TPS)</label>
+                  <input id="targetThroughput" name="targetThroughput" type="number" min="0" step="0.01" value="85" />
+                </div>
+                <div class="field">
+                  <label for="targetConcurrentUsers">Target concurrent users</label>
+                  <input id="targetConcurrentUsers" name="targetConcurrentUsers" type="number" min="0" step="1" value="420" />
+                </div>
+                <div class="field">
+                  <label for="availabilitySla">Availability SLA (%)</label>
+                  <input id="availabilitySla" name="availabilitySla" type="number" min="0" max="100" step="0.01" value="99.9" />
+                </div>
+                <div class="field">
+                  <label for="errorBudget">Max error rate (%)</label>
+                  <input id="errorBudget" name="errorBudget" type="number" min="0" max="100" step="0.01" value="1" />
+                </div>
+                <div class="field">
+                  <label for="testDuration">Steady-state duration (min)</label>
+                  <input id="testDuration" name="testDuration" type="number" min="1" step="1" value="120" />
+                </div>
+                <div class="field">
+                  <label for="rampUp">Ramp-up duration (min)</label>
+                  <input id="rampUp" name="rampUp" type="number" min="0" step="1" value="30" />
+                </div>
+                <div class="field">
+                  <label for="rampDown">Ramp-down duration (min)</label>
+                  <input id="rampDown" name="rampDown" type="number" min="0" step="1" value="15" />
+                </div>
+                <div class="field">
+                  <label for="primaryKpi">Primary KPI</label>
+                  <select id="primaryKpi" name="primaryKpi">
+                    <option>Response Time</option>
+                    <option selected>Throughput</option>
+                    <option>Concurrency</option>
+                    <option>Error Rate</option>
+                    <option>Resource Utilization</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="section-title">
+                <div>
+                  <h3>Required Test Types</h3>
+                  <p>Select the load scenarios to include in the generated model package.</p>
+                </div>
+              </div>
+              <div class="check-grid">
+                <label class="check-card"><input type="checkbox" name="testType" value="Baseline" checked /> Baseline</label>
+                <label class="check-card"><input type="checkbox" name="testType" value="Load" checked /> Load</label>
+                <label class="check-card"><input type="checkbox" name="testType" value="Peak" checked /> Peak</label>
+                <label class="check-card"><input type="checkbox" name="testType" value="Stress" checked /> Stress</label>
+                <label class="check-card"><input type="checkbox" name="testType" value="Endurance" /> Endurance</label>
+                <label class="check-card"><input type="checkbox" name="testType" value="Scalability" /> Scalability</label>
+              </div>
+
+              <div class="section-title">
+                <div>
+                  <h3>Load Model-Related Details</h3>
+                  <p>Define assumptions used during transaction-volume conversion and virtual-user estimation.</p>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="modelType">Load model type</label>
+                  <select id="modelType" name="modelType">
+                    <option selected>Business Transaction Mix</option>
+                    <option>API Throughput Model</option>
+                    <option>Concurrent User Model</option>
+                    <option>Batch Volume Model</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="businessHours">Business window (hours/day)</label>
+                  <input id="businessHours" name="businessHours" type="number" min="1" max="24" step="0.5" value="12" />
+                </div>
+                <div class="field">
+                  <label for="peakWindow">Peak window</label>
+                  <input id="peakWindow" name="peakWindow" type="text" value="10:00-11:00 CET" />
+                </div>
+                <div class="field">
+                  <label for="geography">Primary geography</label>
+                  <select id="geography" name="geography">
+                    <option selected>EMEA</option>
+                    <option>AMER</option>
+                    <option>APAC</option>
+                    <option>Global</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="environment">Target environment</label>
+                  <select id="environment" name="environment">
+                    <option>DEV</option>
+                    <option selected>PERF</option>
+                    <option>PRE-PROD</option>
+                    <option>PROD-LIKE</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="dataRefresh">Data refresh requirement</label>
+                  <select id="dataRefresh" name="dataRefresh">
+                    <option>Not required</option>
+                    <option selected>Before each execution cycle</option>
+                    <option>Daily</option>
+                    <option>Weekly</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="authModel">Authentication model</label>
+                  <select id="authModel" name="authModel">
+                    <option>Anonymous</option>
+                    <option selected>SSO / OAuth</option>
+                    <option>Basic Auth</option>
+                    <option>Token-Based API</option>
+                    <option>Client Certificate</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="sessionReuse">Session reuse</label>
+                  <select id="sessionReuse" name="sessionReuse">
+                    <option selected>Reuse within business flow</option>
+                    <option>New session per transaction</option>
+                    <option>Sticky session required</option>
+                    <option>No session</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="cacheMode">Cache mode</label>
+                  <select id="cacheMode" name="cacheMode">
+                    <option selected>Browser cache enabled</option>
+                    <option>Cache disabled</option>
+                    <option>API cache headers only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid two" style="margin-top:14px;">
+                <div class="field">
+                  <label for="entryCriteria">Entry criteria</label>
+                  <textarea id="entryCriteria" name="entryCriteria">Scripts are smoke-tested, test data is available, monitoring dashboards are configured, and environment baseline is stable.</textarea>
+                </div>
+                <div class="field">
+                  <label for="assumptions">Load-model assumptions</label>
+                  <textarea id="assumptions" name="assumptions">Peak hour is calculated using the peak-hour percentage of daily transaction volume. Virtual users are estimated using Little's Law: VUsers = Peak TPS x cycle time.</textarea>
+                </div>
+              </div>
+
+              <div class="section-title">
+                <div>
+                  <h3>Workload and Volume Details</h3>
+                  <p>Map carried-forward script IDs to business transactions, traffic mix, and daily volumes.</p>
+                </div>
+                <button type="button" class="btn" id="btnAddWorkloadRow">Add Workload Row</button>
+              </div>
+
+              <div class="table-wrap">
+                <table aria-label="Workload volume table">
+                  <thead>
+                    <tr>
+                      <th style="width:140px;">Script ID</th>
+                      <th style="width:220px;">Business transaction</th>
+                      <th>Priority</th>
+                      <th>Mix %</th>
+                      <th>Daily volume</th>
+                      <th>Peak-hour %</th>
+                      <th>Resp SLA sec</th>
+                      <th>Think sec</th>
+                      <th>Pacing sec</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="workloadRows"></tbody>
+                </table>
+              </div>
+
+              <div id="collectionValidation" class="alert warning hidden" style="margin-top:14px;"></div>
+
+              <div class="action-bar">
+                <div class="action-cluster">
+                  <button type="button" class="btn" id="btnSaveCollection">Save Collection</button>
+                  <button type="button" class="btn" id="btnExportCollectionJson">Export Collection JSON</button>
+                  <button type="button" class="btn" id="btnExportCollectionCsv">Export Workload CSV</button>
+                </div>
+                <div class="action-cluster">
+                  <button type="button" class="btn primary" id="btnGenerate">Generate Load Model</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="generatedTab" class="tab-content">
+          <div class="panel-body">
+            <div id="modelEmptyState" class="alert primary">
+              <div><strong>No generated load model yet.</strong><br />Complete the collection details, then select <strong>Generate Load Model</strong>.</div>
+            </div>
+
+            <div id="modelOutput" class="hidden">
+              <div class="section-title">
+                <div>
+                  <h3>Generated Load Model Summary</h3>
+                  <p>Calculated from workload volumes, business window, peak-hour percentage, response SLA, think time, and pacing.</p>
+                </div>
+                <span id="modelGeneratedAt" class="badge primary">Generated</span>
+              </div>
+
+              <div class="metrics">
+                <div class="metric"><span>Total daily volume</span><strong id="mDailyVolume">-</strong><small>All workload rows</small></div>
+                <div class="metric"><span>Peak hour volume</span><strong id="mPeakHourVolume">-</strong><small>Weighted by row peak %</small></div>
+                <div class="metric"><span>Peak TPS</span><strong id="mPeakTps">-</strong><small>Peak hour volume / 3600</small></div>
+                <div class="metric"><span>Estimated VUsers</span><strong id="mVusers">-</strong><small>Peak TPS x cycle time</small></div>
+              </div>
+
+              <div id="modelWarnings" class="alert warning hidden"></div>
+
+              <div class="section-title">
+                <div>
+                  <h3>Transaction-Level Load Model</h3>
+                  <p>Each script inherits its Script ID from the input collection context.</p>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table aria-label="Generated transaction model">
+                  <thead>
+                    <tr>
+                      <th>Script ID</th>
+                      <th>Business transaction</th>
+                      <th>Mix %</th>
+                      <th>Daily volume</th>
+                      <th>Peak-hour volume</th>
+                      <th>Avg TPS</th>
+                      <th>Peak TPS</th>
+                      <th>Cycle time sec</th>
+                      <th>Estimated VUsers</th>
+                      <th>Priority</th>
+                    </tr>
+                  </thead>
+                  <tbody id="generatedRows"></tbody>
+                </table>
+              </div>
+
+              <div class="section-title">
+                <div>
+                  <h3>Scenario Distribution</h3>
+                  <p>Default multipliers are derived from selected test types for demo purposes.</p>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table aria-label="Scenario distribution">
+                  <thead>
+                    <tr>
+                      <th>Scenario</th>
+                      <th>Multiplier</th>
+                      <th>Target TPS</th>
+                      <th>Target VUsers</th>
+                      <th>Duration</th>
+                      <th>Purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scenarioRows"></tbody>
+                </table>
+              </div>
+
+              <div class="action-bar">
+                <div class="action-cluster">
+                  <button type="button" class="btn" id="btnSaveModel">Save Load Model</button>
+                  <button type="button" class="btn" id="btnExportModelJson">Export Load Model JSON</button>
+                  <button type="button" class="btn" id="btnExportModelCsv">Export Load Model CSV</button>
+                </div>
+                <div class="action-cluster">
+                  <button type="button" class="btn success" id="btnApproveFromGenerated">Approve Load Model</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="approvalTab" class="tab-content">
+          <div class="panel-body">
+            <div class="section-title">
+              <div>
+                <h3>Approval</h3>
+                <p>Approve the generated load model and release it to the next performance-testing stage.</p>
+              </div>
+            </div>
+
+            <div id="approvalPrecheck" class="alert warning">
+              <div><strong>Approval requires a generated load model.</strong><br />Generate the model first, then provide approver details.</div>
+            </div>
+
+            <div class="approval-grid">
+              <div class="field">
+                <label for="approverName">Approver name</label>
+                <input id="approverName" type="text" value="Performance Test Lead" />
+              </div>
+              <div class="field">
+                <label for="approvalDecision">Decision</label>
+                <select id="approvalDecision">
+                  <option selected>Approved</option>
+                  <option>Approved with Conditions</option>
+                  <option>Rejected</option>
+                </select>
+              </div>
+              <div class="field" style="grid-column:1/-1;">
+                <label for="approvalNotes">Approval notes</label>
+                <textarea id="approvalNotes">Load model accepted for performance test design. Proceed with script parameterization, data setup, and execution scheduling.</textarea>
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <div class="action-cluster">
+                <button type="button" class="btn success" id="btnApprove">Approve Load Model</button>
+                <button type="button" class="btn" id="btnExportApproval">Export Approval Record</button>
+                <!-- <button type="button" class="btn" id="btnExportApproval">Move to Script Validation</button> -->
+				<a href="..\03_JMX_Validator\03_jmx_Script_Validator.html" target="_blank" rel="noopener noreferrer">
+					<button id="btnExportApproval" class="btn">Go to Script Validation</button>
+				</a>
+				
+              </div>
+              <span id="approvalRecordSummary" class="muted">No approval record captured.</span>
+            </div>
+
+            <div class="section-title">
+              <div>
+                <h3>Next Stage Functions</h3>
+                <p>Unlocked after approval. These represent downstream handoff actions for the performance test lifecycle.</p>
+              </div>
+              <span id="nextStageBadge" class="badge warning">Locked</span>
+            </div>
+
+            <div id="nextStageLocked" class="alert primary">
+              <div><strong>Next stage is locked.</strong><br />Approve the generated load model to enable downstream functions.</div>
+            </div>
+
+            <div class="next-stage-grid" id="nextStageGrid">
+              <div class="stage-card">
+                <div>
+                  <span class="badge">Next</span>
+                  <h4>Create Test Data Plan</h4>
+                  <p>Generate data requirements by script, volume, user pool, and refresh cycle.</p>
+                </div>
+                <button type="button" class="btn" data-stage-action="Create Test Data Plan" disabled>Start Function</button>
+              </div>
+              <div class="stage-card">
+                <div>
+                  <span class="badge">Next</span>
+                  <h4>Start Script Parameterization</h4>
+                  <p>Push approved script IDs, mix percentages, and pacing into script design tasks.</p>
+                </div>
+                <button type="button" class="btn" data-stage-action="Start Script Parameterization" disabled>Start Function</button>
+              </div>
+              <div class="stage-card">
+                <div>
+                  <span class="badge">Next</span>
+                  <h4>Create Execution Schedule</h4>
+                  <p>Create execution windows using ramp-up, steady-state duration, and test type selection.</p>
+                </div>
+                <button type="button" class="btn" data-stage-action="Create Execution Schedule" disabled>Start Function</button>
+              </div>
+              <div class="stage-card">
+                <div>
+                  <span class="badge">Next</span>
+                  <h4>Publish to Test Design</h4>
+                  <p>Send the approved load model package to the performance test design stage.</p>
+                </div>
+                <button type="button" class="btn" data-stage-action="Publish to Test Design" disabled>Start Function</button>
+              </div>
+            </div>
+
+            <div class="section-title">
+              <div>
+                <h3>Handoff Log</h3>
+                <p>Demo audit trail for approval and next-stage actions.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table aria-label="Handoff log" style="min-width:680px;">
+                <thead>
+                  <tr><th>Timestamp</th><th>Action</th><th>Status</th><th>Reference</th></tr>
+                </thead>
+                <tbody id="handoffRows">
+                  <tr><td colspan="4" class="muted">No handoff actions yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEYS = {
+      input: "inputCollection",
+      collection: "loadModelCollectionDemo",
+      model: "generatedLoadModelDemo",
+      approval: "loadModelApprovalDemo"
+    };
+
+    const DEFAULT_INPUT = {
+      requestId: "REQ-PT-2026-0142",
+      requestTitle: "Customer Portal Performance Validation",
+      scriptIds: ["SCR-LOGIN-001", "SCR-SEARCH-002", "SCR-CHECKOUT-003", "SCR-ORDER-004"]
+    };
+
+    const DEFAULT_TRANSACTIONS = [
+      { scriptId: "SCR-LOGIN-001", transactionName: "Login and dashboard landing", priority: "High", mixPct: 20, dailyVolume: 48000, peakHourPct: 18, responseSlaSec: 2.0, thinkTimeSec: 3, pacingSec: 4 },
+      { scriptId: "SCR-SEARCH-002", transactionName: "Product search and filter", priority: "High", mixPct: 35, dailyVolume: 84000, peakHourPct: 20, responseSlaSec: 2.5, thinkTimeSec: 5, pacingSec: 4 },
+      { scriptId: "SCR-CHECKOUT-003", transactionName: "Cart checkout", priority: "Critical", mixPct: 15, dailyVolume: 36000, peakHourPct: 22, responseSlaSec: 3.0, thinkTimeSec: 6, pacingSec: 6 },
+      { scriptId: "SCR-ORDER-004", transactionName: "Order history lookup", priority: "Medium", mixPct: 30, dailyVolume: 72000, peakHourPct: 15, responseSlaSec: 2.0, thinkTimeSec: 4, pacingSec: 5 }
+    ];
+
+    let inputContext = { ...DEFAULT_INPUT };
+    let generatedModel = null;
+    let approvalRecord = null;
+    let handoffLog = [];
+
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+    function nowIso() {
+      return new Date().toISOString();
+    }
+
+    function formatLocal(iso) {
+      if (!iso) return "-";
+      return new Intl.DateTimeFormat(undefined, {
+        year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"
+      }).format(new Date(iso));
+    }
+
+    function formatNumber(value, digits = 0) {
+      const number = Number(value) || 0;
+      return number.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
+    }
+
+    function safeNumber(value, fallback = 0) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function showToast(message) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function setLastAction(message) {
+      $("#lastAction").textContent = message;
+    }
+
+    function downloadText(filename, text, mime = "text/plain") {
+      const blob = new Blob([text], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function slug(value) {
+      return String(value || "load-model").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "load-model";
+    }
+
+    function toCsv(rows) {
+      if (!rows || rows.length === 0) return "";
+      const headers = Object.keys(rows[0]);
+      const escape = (v) => {
+        const value = v === null || v === undefined ? "" : String(v);
+        if (/[",\n]/.test(value)) return '"' + value.replace(/"/g, '""') + '"';
+        return value;
+      };
+      return [headers.join(","), ...rows.map(row => headers.map(h => escape(row[h])).join(","))].join("\n");
+    }
+
+    function readInputContext() {
+      const params = new URLSearchParams(window.location.search);
+      const requestId = params.get("requestId");
+      const requestTitle = params.get("requestTitle");
+      const scriptIds = params.get("scriptIds");
+
+      if (requestId || requestTitle || scriptIds) {
+        const ids = scriptIds ? scriptIds.split(",").map(v => v.trim()).filter(Boolean) : DEFAULT_INPUT.scriptIds;
+        return {
+          source: "URL",
+          data: {
+            requestId: requestId || DEFAULT_INPUT.requestId,
+            requestTitle: requestTitle || DEFAULT_INPUT.requestTitle,
+            scriptIds: ids.length ? ids : DEFAULT_INPUT.scriptIds
+          }
+        };
+      }
+
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.input) || "null");
+        if (stored && stored.requestId && stored.requestTitle && Array.isArray(stored.scriptIds)) {
+          return { source: "Saved", data: stored };
+        }
+      } catch (error) {
+        console.warn("Unable to parse saved input context", error);
+      }
+
+      return { source: "Demo", data: { ...DEFAULT_INPUT } };
+    }
+
+    function applyInputContext() {
+      const read = readInputContext();
+      inputContext = read.data;
+      $("#requestId").value = inputContext.requestId;
+      $("#requestTitle").value = inputContext.requestTitle;
+      $("#contextSourceBadge").textContent = read.source;
+      $("#scriptChipRow").innerHTML = inputContext.scriptIds.map(id => `<span class="chip">${escapeHtml(id)}</span>`).join("");
+      updateScriptOptions();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function updateScriptOptions() {
+      const options = inputContext.scriptIds.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
+      $$("select[data-field='scriptId']").forEach(select => {
+        const current = select.value;
+        select.innerHTML = options;
+        if (inputContext.scriptIds.includes(current)) select.value = current;
+      });
+    }
+
+    function priorityOptions(selected) {
+      return ["Critical", "High", "Medium", "Low"].map(value => `<option ${selected === value ? "selected" : ""}>${value}</option>`).join("");
+    }
+
+    function scriptOptions(selected) {
+      return inputContext.scriptIds.map(value => `<option value="${escapeHtml(value)}" ${selected === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("");
+    }
+
+    function addWorkloadRow(row = {}) {
+      const tbody = $("#workloadRows");
+      const index = tbody.children.length;
+      const defaults = {
+        scriptId: inputContext.scriptIds[index % inputContext.scriptIds.length] || "SCRIPT-ID",
+        transactionName: "Business transaction " + (index + 1),
+        priority: "Medium",
+        mixPct: 0,
+        dailyVolume: 0,
+        peakHourPct: 15,
+        responseSlaSec: safeNumber($("#targetResponseP95")?.value, 2),
+        thinkTimeSec: 3,
+        pacingSec: 5
+      };
+      const data = { ...defaults, ...row };
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><select data-field="scriptId">${scriptOptions(data.scriptId)}</select></td>
+        <td><input data-field="transactionName" type="text" value="${escapeHtml(data.transactionName)}" /></td>
+        <td><select data-field="priority">${priorityOptions(data.priority)}</select></td>
+        <td><input data-field="mixPct" type="number" min="0" max="100" step="0.1" value="${data.mixPct}" /></td>
+        <td><input data-field="dailyVolume" type="number" min="0" step="1" value="${data.dailyVolume}" /></td>
+        <td><input data-field="peakHourPct" type="number" min="0" max="100" step="0.1" value="${data.peakHourPct}" /></td>
+        <td><input data-field="responseSlaSec" type="number" min="0" step="0.1" value="${data.responseSlaSec}" /></td>
+        <td><input data-field="thinkTimeSec" type="number" min="0" step="0.1" value="${data.thinkTimeSec}" /></td>
+        <td><input data-field="pacingSec" type="number" min="0" step="0.1" value="${data.pacingSec}" /></td>
+        <td>
+          <div class="row-actions">
+            <button type="button" class="icon-btn" title="Duplicate row" data-action="duplicate">+</button>
+            <button type="button" class="icon-btn delete" title="Delete row" data-action="delete">x</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      markCollectionDirty();
+    }
+
+    function seedDefaultRows() {
+      $("#workloadRows").innerHTML = "";
+      DEFAULT_TRANSACTIONS.forEach(addWorkloadRow);
+      markCollectionDirty();
+    }
+
+    function markCollectionDirty() {
+      $("#collectionStatus").textContent = "Unsaved";
+      $("#collectionStatus").className = "badge warning";
+      $("#stepCollect").className = "step-card";
+    }
+
+    function markCollectionSaved() {
+      $("#collectionStatus").textContent = "Saved";
+      $("#collectionStatus").className = "badge success";
+      $("#stepCollect").className = "step-card done";
+    }
+
+    function markModelGenerated() {
+      $("#modelStatus").textContent = "Generated";
+      $("#modelStatus").className = "badge success";
+      $("#stepGenerate").className = "step-card done";
+    }
+
+    function markModelSaved() {
+      $("#modelStatus").textContent = "Saved";
+      $("#modelStatus").className = "badge success";
+      $("#stepGenerate").className = "step-card done";
+    }
+
+    function getCheckedTestTypes() {
+      return $$('input[name="testType"]:checked').map(input => input.value);
+    }
+
+    function setCheckedTestTypes(values = []) {
+      $$('input[name="testType"]').forEach(input => {
+        input.checked = values.includes(input.value);
+      });
+    }
+
+    function collectFormData() {
+      const fields = [
+        "targetResponseP95", "targetThroughput", "targetConcurrentUsers", "availabilitySla", "errorBudget",
+        "testDuration", "rampUp", "rampDown", "primaryKpi", "modelType", "businessHours", "peakWindow",
+        "geography", "environment", "dataRefresh", "authModel", "sessionReuse", "cacheMode", "entryCriteria", "assumptions"
+      ];
+      const form = {};
+      fields.forEach(id => {
+        const el = $("#" + id);
+        form[id] = el ? el.value : "";
+      });
+
+      return {
+        metadata: {
+          requestId: inputContext.requestId,
+          requestTitle: inputContext.requestTitle,
+          scriptIds: [...inputContext.scriptIds],
+          collectedAt: nowIso()
+        },
+        requirements: {
+          targetResponseP95: safeNumber(form.targetResponseP95),
+          targetThroughput: safeNumber(form.targetThroughput),
+          targetConcurrentUsers: safeNumber(form.targetConcurrentUsers),
+          availabilitySla: safeNumber(form.availabilitySla),
+          errorBudget: safeNumber(form.errorBudget),
+          testDuration: safeNumber(form.testDuration),
+          rampUp: safeNumber(form.rampUp),
+          rampDown: safeNumber(form.rampDown),
+          primaryKpi: form.primaryKpi,
+          testTypes: getCheckedTestTypes()
+        },
+        modelDetails: {
+          modelType: form.modelType,
+          businessHours: safeNumber(form.businessHours, 12),
+          peakWindow: form.peakWindow,
+          geography: form.geography,
+          environment: form.environment,
+          dataRefresh: form.dataRefresh,
+          authModel: form.authModel,
+          sessionReuse: form.sessionReuse,
+          cacheMode: form.cacheMode,
+          entryCriteria: form.entryCriteria,
+          assumptions: form.assumptions
+        },
+        workload: readWorkloadRows()
+      };
+    }
+
+    function readWorkloadRows() {
+      return $$("#workloadRows tr").map(tr => {
+        const value = (field) => tr.querySelector(`[data-field='${field}']`)?.value;
+        return {
+          scriptId: value("scriptId"),
+          transactionName: value("transactionName"),
+          priority: value("priority"),
+          mixPct: safeNumber(value("mixPct")),
+          dailyVolume: safeNumber(value("dailyVolume")),
+          peakHourPct: safeNumber(value("peakHourPct")),
+          responseSlaSec: safeNumber(value("responseSlaSec")),
+          thinkTimeSec: safeNumber(value("thinkTimeSec")),
+          pacingSec: safeNumber(value("pacingSec"))
+        };
+      });
+    }
+
+    function applyCollection(data) {
+      if (!data) return;
+      if (data.metadata) {
+        inputContext = {
+          requestId: data.metadata.requestId || inputContext.requestId,
+          requestTitle: data.metadata.requestTitle || inputContext.requestTitle,
+          scriptIds: Array.isArray(data.metadata.scriptIds) && data.metadata.scriptIds.length ? data.metadata.scriptIds : inputContext.scriptIds
+        };
+        $("#requestId").value = inputContext.requestId;
+        $("#requestTitle").value = inputContext.requestTitle;
+        $("#scriptChipRow").innerHTML = inputContext.scriptIds.map(id => `<span class="chip">${escapeHtml(id)}</span>`).join("");
+      }
+
+      const setVal = (id, value) => {
+        const el = $("#" + id);
+        if (el !== null && value !== undefined && value !== null) el.value = value;
+      };
+      Object.entries(data.requirements || {}).forEach(([key, value]) => {
+        if (key !== "testTypes") setVal(key, value);
+      });
+      if (data.requirements?.testTypes) setCheckedTestTypes(data.requirements.testTypes);
+      Object.entries(data.modelDetails || {}).forEach(([key, value]) => setVal(key, value));
+
+      $("#workloadRows").innerHTML = "";
+      (data.workload || []).forEach(addWorkloadRow);
+      if (!data.workload || data.workload.length === 0) seedDefaultRows();
+      markCollectionSaved();
+    }
+
+    function validateCollection(data) {
+      const messages = [];
+      if (!data.workload.length) messages.push("At least one workload row is required.");
+      const mixTotal = data.workload.reduce((sum, row) => sum + safeNumber(row.mixPct), 0);
+      if (Math.abs(mixTotal - 100) > 0.25) messages.push(`Workload mix totals ${formatNumber(mixTotal, 1)}%. Target should be 100%.`);
+      if (data.modelDetails.businessHours <= 0 || data.modelDetails.businessHours > 24) messages.push("Business window must be between 1 and 24 hours.");
+      data.workload.forEach((row, index) => {
+        if (!row.scriptId) messages.push(`Row ${index + 1}: Script ID is required.`);
+        if (!row.transactionName) messages.push(`Row ${index + 1}: Business transaction is required.`);
+        if (row.dailyVolume <= 0) messages.push(`Row ${index + 1}: Daily volume should be greater than zero.`);
+        if (row.peakHourPct <= 0) messages.push(`Row ${index + 1}: Peak-hour percentage should be greater than zero.`);
+      });
+      return messages;
+    }
+
+    function saveCollection() {
+      const data = collectFormData();
+      const issues = validateCollection(data);
+      renderCollectionValidation(issues, true);
+      localStorage.setItem(STORAGE_KEYS.collection, JSON.stringify(data, null, 2));
+      markCollectionSaved();
+      setLastAction("Collection saved");
+      showToast(issues.length ? "Collection saved with validation warnings." : "Collection saved locally.");
+      return data;
+    }
+
+    function exportCollectionJson() {
+      const data = collectFormData();
+      downloadText(`${slug(data.metadata.requestId)}-load-model-collection.json`, JSON.stringify(data, null, 2), "application/json");
+      setLastAction("Collection exported");
+      showToast("Collection JSON export created.");
+    }
+
+    function exportCollectionCsv() {
+      const data = collectFormData();
+      downloadText(`${slug(data.metadata.requestId)}-workload-volume.csv`, toCsv(data.workload), "text/csv");
+      setLastAction("Workload CSV exported");
+      showToast("Workload CSV export created.");
+    }
+
+    function renderCollectionValidation(messages, fromSave = false) {
+      const alert = $("#collectionValidation");
+      if (!messages.length) {
+        alert.classList.add("hidden");
+        alert.innerHTML = "";
+        return;
+      }
+      alert.classList.remove("hidden");
+      alert.className = "alert warning";
+      alert.innerHTML = `<div><strong>${fromSave ? "Saved with warnings" : "Validation warnings"}</strong><br>${messages.map(escapeHtml).join("<br>")}</div>`;
+    }
+
+    function calculateGeneratedModel(collection) {
+      const businessHours = Math.max(1, safeNumber(collection.modelDetails.businessHours, 12));
+      const transactionRows = collection.workload.map(row => {
+        const dailyVolume = Math.max(0, row.dailyVolume);
+        const peakHourVolume = dailyVolume * Math.max(0, row.peakHourPct) / 100;
+        const avgTps = dailyVolume / (businessHours * 3600);
+        const peakTps = peakHourVolume / 3600;
+        const cycleTimeSec = Math.max(0, row.responseSlaSec) + Math.max(0, row.thinkTimeSec) + Math.max(0, row.pacingSec);
+        const estimatedVUsers = Math.ceil(peakTps * Math.max(1, cycleTimeSec));
+        return {
+          scriptId: row.scriptId,
+          transactionName: row.transactionName,
+          priority: row.priority,
+          mixPct: row.mixPct,
+          dailyVolume,
+          peakHourPct: row.peakHourPct,
+          peakHourVolume,
+          avgTps,
+          peakTps,
+          responseSlaSec: row.responseSlaSec,
+          thinkTimeSec: row.thinkTimeSec,
+          pacingSec: row.pacingSec,
+          cycleTimeSec,
+          estimatedVUsers
+        };
+      });
+
+      const totals = transactionRows.reduce((acc, row) => {
+        acc.dailyVolume += row.dailyVolume;
+        acc.peakHourVolume += row.peakHourVolume;
+        acc.avgTps += row.avgTps;
+        acc.peakTps += row.peakTps;
+        acc.estimatedVUsers += row.estimatedVUsers;
+        acc.mixPct += row.mixPct;
+        return acc;
+      }, { dailyVolume: 0, peakHourVolume: 0, avgTps: 0, peakTps: 0, estimatedVUsers: 0, mixPct: 0 });
+
+      const selectedTypes = collection.requirements.testTypes.length ? collection.requirements.testTypes : ["Load"];
+      const scenarioTemplates = {
+        Baseline: { multiplier: 0.5, purpose: "Validate stable baseline against nominal production traffic." },
+        Load: { multiplier: 1.0, purpose: "Validate expected workload against stated service-level objectives." },
+        Peak: { multiplier: 1.5, purpose: "Validate peak-hour and promotional traffic resilience." },
+        Stress: { multiplier: 2.0, purpose: "Identify saturation point and degradation behavior." },
+        Endurance: { multiplier: 1.0, purpose: "Validate long-running stability, leaks, and data growth behavior." },
+        Scalability: { multiplier: 1.25, purpose: "Validate incremental capacity scaling behavior." }
+      };
+
+      const scenarios = selectedTypes.map(type => {
+        const template = scenarioTemplates[type] || { multiplier: 1.0, purpose: "Selected scenario." };
+        const duration = type === "Endurance" ? "8 hours" : `${collection.requirements.rampUp}m ramp-up + ${collection.requirements.testDuration}m steady-state + ${collection.requirements.rampDown}m ramp-down`;
+        return {
+          scenario: type,
+          multiplier: template.multiplier,
+          targetTps: totals.peakTps * template.multiplier,
+          targetVUsers: Math.ceil(totals.estimatedVUsers * template.multiplier),
+          duration,
+          purpose: template.purpose
+        };
+      });
+
+      const warnings = [];
+      if (Math.abs(totals.mixPct - 100) > 0.25) warnings.push(`Traffic mix currently totals ${formatNumber(totals.mixPct, 1)}%, not 100%.`);
+      if (collection.requirements.targetThroughput && totals.peakTps < collection.requirements.targetThroughput) warnings.push(`Calculated peak TPS (${formatNumber(totals.peakTps, 2)}) is below the stated target throughput (${formatNumber(collection.requirements.targetThroughput, 2)} TPS).`);
+      if (collection.requirements.targetConcurrentUsers && totals.estimatedVUsers < collection.requirements.targetConcurrentUsers) warnings.push(`Estimated VUsers (${formatNumber(totals.estimatedVUsers, 0)}) are below the stated target concurrency (${formatNumber(collection.requirements.targetConcurrentUsers, 0)} users).`);
+
+      return {
+        metadata: {
+          requestId: collection.metadata.requestId,
+          requestTitle: collection.metadata.requestTitle,
+          scriptIds: collection.metadata.scriptIds,
+          generatedAt: nowIso(),
+          status: "Generated"
+        },
+        sourceCollection: collection,
+        formula: "Peak TPS = peak-hour volume / 3600; Estimated VUsers = Peak TPS x (response SLA + think time + pacing).",
+        totals,
+        transactions: transactionRows,
+        scenarios,
+        warnings
+      };
+    }
+
+    function generateLoadModel() {
+      const collection = collectFormData();
+      const issues = validateCollection(collection);
+      renderCollectionValidation(issues, false);
+      generatedModel = calculateGeneratedModel(collection);
+      renderGeneratedModel(generatedModel);
+      markModelGenerated();
+      $("#modelEmptyState").classList.add("hidden");
+      $("#modelOutput").classList.remove("hidden");
+      switchTab("generatedTab");
+      setLastAction("Load model generated");
+      showToast(issues.length ? "Load model generated with collection warnings." : "Load model generated.");
+    }
+
+    function renderGeneratedModel(model) {
+      $("#modelGeneratedAt").textContent = "Generated " + formatLocal(model.metadata.generatedAt);
+      $("#mDailyVolume").textContent = formatNumber(model.totals.dailyVolume, 0);
+      $("#mPeakHourVolume").textContent = formatNumber(model.totals.peakHourVolume, 0);
+      $("#mPeakTps").textContent = formatNumber(model.totals.peakTps, 2);
+      $("#mVusers").textContent = formatNumber(model.totals.estimatedVUsers, 0);
+
+      const warnings = $("#modelWarnings");
+      if (model.warnings.length) {
+        warnings.classList.remove("hidden");
+        warnings.innerHTML = `<div><strong>Review warnings</strong><br>${model.warnings.map(escapeHtml).join("<br>")}</div>`;
+      } else {
+        warnings.classList.add("hidden");
+        warnings.innerHTML = "";
+      }
+
+      $("#generatedRows").innerHTML = model.transactions.map(row => `
+        <tr>
+          <td class="mono">${escapeHtml(row.scriptId)}</td>
+          <td>${escapeHtml(row.transactionName)}</td>
+          <td>${formatNumber(row.mixPct, 1)}%</td>
+          <td>${formatNumber(row.dailyVolume, 0)}</td>
+          <td>${formatNumber(row.peakHourVolume, 0)}</td>
+          <td>${formatNumber(row.avgTps, 3)}</td>
+          <td>${formatNumber(row.peakTps, 3)}</td>
+          <td>${formatNumber(row.cycleTimeSec, 1)}</td>
+          <td>${formatNumber(row.estimatedVUsers, 0)}</td>
+          <td>${escapeHtml(row.priority)}</td>
+        </tr>
+      `).join("");
+
+      $("#scenarioRows").innerHTML = model.scenarios.map(row => `
+        <tr>
+          <td>${escapeHtml(row.scenario)}</td>
+          <td>${formatNumber(row.multiplier, 2)}x</td>
+          <td>${formatNumber(row.targetTps, 2)}</td>
+          <td>${formatNumber(row.targetVUsers, 0)}</td>
+          <td>${escapeHtml(row.duration)}</td>
+          <td>${escapeHtml(row.purpose)}</td>
+        </tr>
+      `).join("");
+
+      $("#approvalPrecheck").className = "alert success";
+      $("#approvalPrecheck").innerHTML = `<div><strong>Generated load model is ready for approval.</strong><br>Request ${escapeHtml(model.metadata.requestId)} - ${escapeHtml(model.metadata.requestTitle)}</div>`;
+    }
+
+    function saveGeneratedModel() {
+      if (!generatedModel) {
+        showToast("Generate a load model before saving.");
+        switchTab("collectionTab");
+        return;
+      }
+      localStorage.setItem(STORAGE_KEYS.model, JSON.stringify(generatedModel, null, 2));
+      markModelSaved();
+      setLastAction("Load model saved");
+      showToast("Generated load model saved locally.");
+    }
+
+    function exportModelJson() {
+      if (!generatedModel) {
+        showToast("Generate a load model before exporting.");
+        return;
+      }
+      downloadText(`${slug(generatedModel.metadata.requestId)}-generated-load-model.json`, JSON.stringify(generatedModel, null, 2), "application/json");
+      setLastAction("Load model JSON exported");
+      showToast("Load model JSON export created.");
+    }
+
+    function exportModelCsv() {
+      if (!generatedModel) {
+        showToast("Generate a load model before exporting.");
+        return;
+      }
+      downloadText(`${slug(generatedModel.metadata.requestId)}-generated-load-model.csv`, toCsv(generatedModel.transactions), "text/csv");
+      setLastAction("Load model CSV exported");
+      showToast("Load model CSV export created.");
+    }
+
+    function approveLoadModel() {
+      if (!generatedModel) {
+        showToast("Generate a load model before approval.");
+        switchTab("collectionTab");
+        return;
+      }
+      const decision = $("#approvalDecision").value;
+      approvalRecord = {
+        requestId: generatedModel.metadata.requestId,
+        requestTitle: generatedModel.metadata.requestTitle,
+        decision,
+        approverName: $("#approverName").value.trim() || "Approver",
+        approvalNotes: $("#approvalNotes").value.trim(),
+        approvedAt: nowIso(),
+        generatedModelReference: `${generatedModel.metadata.requestId}:${generatedModel.metadata.generatedAt}`,
+        nextStageUnlocked: decision !== "Rejected"
+      };
+      localStorage.setItem(STORAGE_KEYS.approval, JSON.stringify(approvalRecord, null, 2));
+      renderApprovalState();
+      addHandoffLog("Load Model Approval", decision, approvalRecord.generatedModelReference);
+      switchTab("approvalTab");
+      setLastAction("Approval captured");
+      showToast(decision === "Rejected" ? "Approval record saved as rejected." : "Load model approved and next stage unlocked.");
+    }
+
+    function renderApprovalState() {
+      if (!approvalRecord) return;
+      const approved = approvalRecord.nextStageUnlocked;
+      $("#approvalStatus").textContent = approvalRecord.decision;
+      $("#approvalStatus").className = approved ? "badge success" : "badge danger";
+      $("#stepApprove").className = approved ? "step-card done" : "step-card pending";
+      $("#approvalRecordSummary").textContent = `${approvalRecord.decision} by ${approvalRecord.approverName} at ${formatLocal(approvalRecord.approvedAt)}`;
+      $("#nextStageBadge").textContent = approved ? "Unlocked" : "Locked";
+      $("#nextStageBadge").className = approved ? "badge success" : "badge warning";
+      $("#nextStageLocked").classList.toggle("hidden", approved);
+      $$('[data-stage-action]').forEach(button => { button.disabled = !approved; });
+    }
+
+    function exportApprovalRecord() {
+      if (!approvalRecord) {
+        showToast("Approve the load model before exporting the approval record.");
+        return;
+      }
+      downloadText(`${slug(approvalRecord.requestId)}-load-model-approval.json`, JSON.stringify(approvalRecord, null, 2), "application/json");
+      setLastAction("Approval record exported");
+      showToast("Approval record export created.");
+    }
+
+    function addHandoffLog(action, status, reference) {
+      const item = { timestamp: nowIso(), action, status, reference };
+      handoffLog.unshift(item);
+      renderHandoffLog();
+    }
+
+    function renderHandoffLog() {
+      const tbody = $("#handoffRows");
+      if (!handoffLog.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">No handoff actions yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = handoffLog.map(row => `
+        <tr>
+          <td>${formatLocal(row.timestamp)}</td>
+          <td>${escapeHtml(row.action)}</td>
+          <td><span class="badge ${row.status.includes("Approved") || row.status.includes("Started") || row.status.includes("Published") ? "success" : ""}">${escapeHtml(row.status)}</span></td>
+          <td class="mono">${escapeHtml(row.reference)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function switchTab(tabId) {
+      $$(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === tabId));
+      $$(".tab-content").forEach(content => content.classList.toggle("active", content.id === tabId));
+    }
+
+    function loadSaved() {
+      let loadedSomething = false;
+      try {
+        const collection = JSON.parse(localStorage.getItem(STORAGE_KEYS.collection) || "null");
+        if (collection) {
+          applyCollection(collection);
+          loadedSomething = true;
+        }
+      } catch (error) {
+        console.warn("Unable to load saved collection", error);
+      }
+      try {
+        const model = JSON.parse(localStorage.getItem(STORAGE_KEYS.model) || "null");
+        if (model) {
+          generatedModel = model;
+          renderGeneratedModel(generatedModel);
+          $("#modelEmptyState").classList.add("hidden");
+          $("#modelOutput").classList.remove("hidden");
+          markModelSaved();
+          loadedSomething = true;
+        }
+      } catch (error) {
+        console.warn("Unable to load saved model", error);
+      }
+      try {
+        const approval = JSON.parse(localStorage.getItem(STORAGE_KEYS.approval) || "null");
+        if (approval) {
+          approvalRecord = approval;
+          renderApprovalState();
+          loadedSomething = true;
+        }
+      } catch (error) {
+        console.warn("Unable to load saved approval", error);
+      }
+      setLastAction(loadedSomething ? "Saved data loaded" : "No saved data");
+      showToast(loadedSomething ? "Saved demo data loaded." : "No saved demo data found.");
+    }
+
+    function resetDemo() {
+      localStorage.removeItem(STORAGE_KEYS.collection);
+      localStorage.removeItem(STORAGE_KEYS.model);
+      localStorage.removeItem(STORAGE_KEYS.approval);
+      generatedModel = null;
+      approvalRecord = null;
+      handoffLog = [];
+      applyInputContext();
+      seedDefaultRows();
+      $("#modelEmptyState").classList.remove("hidden");
+      $("#modelOutput").classList.add("hidden");
+      $("#modelStatus").textContent = "Not generated";
+      $("#modelStatus").className = "badge";
+      $("#approvalStatus").textContent = "Not approved";
+      $("#approvalStatus").className = "badge";
+      $("#collectionStatus").textContent = "Unsaved";
+      $("#collectionStatus").className = "badge warning";
+      $("#stepCollect").className = "step-card";
+      $("#stepGenerate").className = "step-card pending";
+      $("#stepApprove").className = "step-card pending";
+      $("#approvalPrecheck").className = "alert warning";
+      $("#approvalPrecheck").innerHTML = `<div><strong>Approval requires a generated load model.</strong><br>Generate the model first, then provide approver details.</div>`;
+      $("#approvalRecordSummary").textContent = "No approval record captured.";
+      $("#nextStageBadge").textContent = "Locked";
+      $("#nextStageBadge").className = "badge warning";
+      $("#nextStageLocked").classList.remove("hidden");
+      $$('[data-stage-action]').forEach(button => { button.disabled = true; });
+      renderHandoffLog();
+      renderCollectionValidation([]);
+      switchTab("collectionTab");
+      setLastAction("Demo reset");
+      showToast("Demo reset complete.");
+    }
+
+    function seedInputCollectionDemoData() {
+      const seeded = {
+        requestId: "REQ-PT-2026-0198",
+        requestTitle: "Digital Claims Platform Load Test",
+        scriptIds: ["SCR-AUTH-101", "SCR-CLAIM-201", "SCR-DOC-301", "SCR-PAY-401", "SCR-REPORT-501"]
+      };
+      localStorage.setItem(STORAGE_KEYS.input, JSON.stringify(seeded, null, 2));
+      applyInputContext();
+      $("#workloadRows").innerHTML = "";
+      seeded.scriptIds.forEach((id, index) => addWorkloadRow({
+        scriptId: id,
+        transactionName: ["Authenticate user", "Create claim", "Upload documents", "Payment status", "Report search"][index] || "Business flow",
+        priority: index < 2 ? "High" : "Medium",
+        mixPct: [25, 30, 15, 10, 20][index] || 20,
+        dailyVolume: [60000, 72000, 36000, 24000, 48000][index] || 25000,
+        peakHourPct: [18, 22, 16, 14, 20][index] || 15,
+        responseSlaSec: [2, 3, 4, 2, 2.5][index] || 2,
+        thinkTimeSec: [3, 7, 8, 4, 5][index] || 4,
+        pacingSec: [4, 6, 7, 5, 5][index] || 5
+      }));
+      setLastAction("Input context seeded");
+      showToast("Input collection demo data seeded and carried forward.");
+    }
+
+    function wireEvents() {
+      $$(".tab").forEach(tab => tab.addEventListener("click", () => switchTab(tab.dataset.tab)));
+      $("#btnAddWorkloadRow").addEventListener("click", () => addWorkloadRow());
+      $("#workloadRows").addEventListener("click", event => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const tr = button.closest("tr");
+        if (button.dataset.action === "delete") {
+          tr.remove();
+          markCollectionDirty();
+        }
+        if (button.dataset.action === "duplicate") {
+          const rows = readWorkloadRows();
+          const index = [...tr.parentNode.children].indexOf(tr);
+          addWorkloadRow(rows[index]);
+        }
+      });
+      $("#loadModelForm").addEventListener("input", markCollectionDirty);
+      $("#loadModelForm").addEventListener("change", markCollectionDirty);
+
+      ["#btnSaveCollection", "#btnSaveCollectionHeader"].forEach(id => $(id).addEventListener("click", saveCollection));
+      ["#btnExportCollectionJson", "#btnExportCollectionHeader"].forEach(id => $(id).addEventListener("click", exportCollectionJson));
+      $("#btnExportCollectionCsv").addEventListener("click", exportCollectionCsv);
+      ["#btnGenerate", "#btnGenerateTop"].forEach(id => $(id).addEventListener("click", generateLoadModel));
+      $("#btnSaveModel").addEventListener("click", saveGeneratedModel);
+      $("#btnExportModelJson").addEventListener("click", exportModelJson);
+      $("#btnExportModelCsv").addEventListener("click", exportModelCsv);
+      ["#btnApprove", "#btnApproveFromGenerated"].forEach(id => $(id).addEventListener("click", approveLoadModel));
+      $("#btnExportApproval").addEventListener("click", exportApprovalRecord);
+      $("#btnLoadSaved").addEventListener("click", loadSaved);
+      $("#btnResetDemo").addEventListener("click", resetDemo);
+      $("#btnSeedInput").addEventListener("click", seedInputCollectionDemoData);
+
+      $$('[data-stage-action]').forEach(button => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.stageAction;
+          const status = action.includes("Publish") ? "Published" : "Started";
+          addHandoffLog(action, status, approvalRecord?.requestId || inputContext.requestId);
+          setLastAction(action);
+          showToast(`${action} ${status.toLowerCase()}.`);
+        });
+      });
+    }
+
+    function init() {
+      applyInputContext();
+      seedDefaultRows();
+      wireEvents();
+      renderHandoffLog();
+      setLastAction("Demo initialized");
+    }
+
+    init();
+  </script>
+</body>
+</html>

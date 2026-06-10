@@ -1,0 +1,85 @@
+{
+  "module": "Input Collection",
+  "templateName": "Performance Test Input Collection - Steps 6 to 8 JSON Output",
+  "version": "1.0",
+  "generatedFromSteps": [
+    6,
+    7,
+    8
+  ],
+  "step6_testConfiguration": {
+    "testType": "Load / stress / soak / spike",
+    "scenarioMix": [
+      {
+        "scenarioId": "SCN-001",
+        "businessFlow": "Checkout happy path",
+        "trafficSharePercent": 60,
+        "targetVirtualUsers": 500,
+        "targetThroughputPerMinute": 1200,
+        "thinkTimeSeconds": 3,
+        "rampUpMinutes": 20,
+        "steadyStateMinutes": 60
+      }
+    ],
+    "dataStrategy": {
+      "testDataSource": "Synthetic seeded accounts and carts",
+      "dataRefreshFrequency": "Before every execution window",
+      "maskingRequired": true
+    },
+    "acceptanceCriteria": {
+      "p95ResponseTimeMs": 750,
+      "errorRatePercentMax": 1.0,
+      "cpuUtilizationPercentMax": 75,
+      "memoryUtilizationPercentMax": 80
+    }
+  },
+  "step7_monitoringAndReporting": {
+    "monitoringTools": [
+      "APM",
+      "cloud metrics",
+      "synthetic logs",
+      "load generator telemetry"
+    ],
+    "dashboards": [
+      {
+        "name": "Checkout Performance Overview",
+        "owner": "Performance Engineering",
+        "url": "TBD"
+      }
+    ],
+    "requiredMetrics": [
+      "transaction response time percentiles",
+      "throughput",
+      "error rate",
+      "CPU",
+      "memory",
+      "database latency",
+      "downstream API latency"
+    ],
+    "reportingCadence": "Execution summary within one business day after each run"
+  },
+  "step8_readinessAndHandoff": {
+    "executionWindow": {
+      "start": "2026-06-15T09:00:00+02:00",
+      "end": "2026-06-19T18:00:00+02:00"
+    },
+    "owners": {
+      "performanceTestLead": "TBD",
+      "applicationOwner": "TBD",
+      "environmentOwner": "TBD",
+      "releaseManager": "TBD"
+    },
+    "knownRisks": [
+      {
+        "risk": "Payment sandbox throttling can distort production-like latency.",
+        "mitigation": "Confirm sandbox capacity and add monitoring around payment gateway calls."
+      }
+    ],
+    "approvalState": {
+      "step6": "pending",
+      "step7": "pending",
+      "step8": "pending"
+    },
+    "handoffDecision": "pending"
+  }
+}

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JMeter Script Analysis & Auto Correct Demo</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-2: #ffffff;
+      --border: #2563eb;
+      --text: #eef6ff;
+      --muted: #9fb4cc;
+      --primary: #38bdf8;
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+      --green-console: #39ff14;
+      --shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      background:
+        linear-gradient(135deg, rgba(56, 189, 248, 0.13), transparent 32%),
+        radial-gradient(circle at 85% 10%, rgba(34, 197, 94, 0.10), transparent 26%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      background: rgba(15, 29, 51, 0.88);
+      border: 1px solid rgba(56, 189, 248, 0.20);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .topbar strong { display: block; font-size: 18px; }
+    .topbar span { color: var(--muted); font-size: 13px; }
+    .topbar-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--muted) !important;
+      font-weight: 800;
+    }
+    .active-pill {
+      background: rgba(56, 189, 248, 0.10);
+      border-color: rgba(56, 189, 248, 0.34);
+      color: var(--primary) !important;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 20px;
+      align-items: stretch;
+      margin-bottom: 20px;
+    }
+
+    .hero-card, .status-card, .panel {
+      background: linear-gradient(180deg, rgba(23, 34, 61, 0.96), rgba(18, 26, 47, 0.96));
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card:after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: -80px;
+      top: -70px;
+      border-radius: 50%;
+      background: rgba(98, 214, 255, 0.12);
+      filter: blur(2px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      background: rgba(98, 214, 255, 0.1);
+      color: var(--primary);
+      border: 1px solid rgba(98, 214, 255, 0.25);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    h1 {
+      margin: 18px 0 10px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.05;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      max-width: 850px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .status-card {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .mini-title {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      font-weight: 800;
+    }
+
+    .score {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .score strong {
+      font-size: 54px;
+      color: var(--warn);
+      line-height: 1;
+    }
+
+    .score span { color: var(--muted); font-size: 14px; }
+
+    .risk-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .risk-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .risk-box b { display: block; font-size: 24px; }
+    .risk-box small { color: var(--muted); }
+    .risk-high b { color: var(--danger); }
+    .risk-med b { color: var(--warn); }
+    .risk-low b { color: var(--success); }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .pipe-step {
+      position: relative;
+      padding: 16px;
+      background: rgba(18, 26, 47, 0.88);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 112px;
+    }
+
+    .pipe-step.active {
+      border-color: rgba(98, 214, 255, 0.75);
+      box-shadow: 0 0 0 2px rgba(98, 214, 255, 0.1), var(--shadow);
+    }
+
+    .pipe-step.done {
+      border-color: rgba(69, 227, 138, 0.5);
+    }
+
+    .step-no {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(98, 214, 255, 0.14);
+      color: var(--primary);
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .pipe-step.done .step-no { background: rgba(69, 227, 138, 0.15); color: var(--success); }
+    .pipe-step h3 { margin: 0 0 5px; font-size: 15px; }
+    .pipe-step p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 20px;
+    }
+
+    .panel { padding: 20px; margin-bottom: 20px; }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.2px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .badge.warn { color: var(--warn); border-color: rgba(255, 202, 95, 0.28); background: rgba(255, 202, 95, 0.08); }
+    .badge.good { color: var(--success); border-color: rgba(69, 227, 138, 0.28); background: rgba(69, 227, 138, 0.08); }
+    .badge.info { color: var(--primary); border-color: rgba(98, 214, 255, 0.28); background: rgba(98, 214, 255, 0.08); }
+
+    .rag-wrap {
+      position: relative;
+      min-height: 510px;
+      border-radius: 10px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        rgba(5, 10, 24, 0.52);
+      background-size: 42px 42px;
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+
+    svg { display: block; width: 100%; height: 510px; }
+
+    .node text { font-size: 12px; font-weight: 800; fill: #06111f; pointer-events: none; }
+    .node .sub { font-size: 10px; font-weight: 700; opacity: 0.75; }
+    .edge { stroke: rgba(159, 176, 208, 0.48); stroke-width: 2; }
+    .edge.red { stroke: rgba(255, 107, 122, 0.72); }
+    .edge.amber { stroke: rgba(255, 202, 95, 0.72); }
+    .edge.green { stroke: rgba(69, 227, 138, 0.72); }
+
+    .analysis-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .finding {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+    }
+
+    .severity {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-top: 5px;
+    }
+
+    .severity.high { background: var(--danger); box-shadow: 0 0 14px rgba(255,107,122,0.7); }
+    .severity.medium { background: var(--warn); box-shadow: 0 0 14px rgba(255,202,95,0.6); }
+    .severity.low { background: var(--success); box-shadow: 0 0 14px rgba(69,227,138,0.6); }
+
+    .finding h4 { margin: 0 0 4px; font-size: 14px; }
+    .finding p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+    .finding code {
+      color: var(--primary);
+      background: rgba(98, 214, 255, 0.08);
+      border: 1px solid rgba(98, 214, 255, 0.16);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+    .fix-flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .fix-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fix-card:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      height: 4px;
+      background: var(--border);
+    }
+
+    .fix-card.ready:before { background: var(--primary); }
+    .fix-card.done:before { background: var(--success); }
+    .fix-card.blocked { opacity: 0.42; }
+    .fix-card h4 { margin: 0 0 8px; font-size: 14px; }
+    .fix-card p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+
+    .console {
+      background: #020702;
+      color: var(--green-console);
+      border: 1px solid rgba(57, 255, 20, 0.35);
+      border-radius: 10px;
+      padding: 16px;
+      min-height: 520px;
+      max-height: 620px;
+      overflow: auto;
+      font-family: Consolas, Monaco, 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      box-shadow: inset 0 0 40px rgba(57, 255, 20, 0.06), 0 0 25px rgba(57, 255, 20, 0.07);
+      white-space: pre;
+    }
+
+    .console::selection { background: rgba(57, 255, 20, 0.25); }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      color: #06111f;
+      background: var(--primary);
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
+    button:disabled { cursor: not-allowed; opacity: 0.42; }
+    button.secondary { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid rgba(255,255,255,0.14); }
+    button.success { background: var(--success); }
+    button.warn { background: var(--warn); }
+    button.purple { background: var(--purple); }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: rgba(5, 10, 24, 0.96);
+      color: var(--text);
+      border: 1px solid rgba(98, 214, 255, 0.35);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      transform: translateY(140%);
+      transition: transform 0.25s ease;
+      z-index: 10;
+      max-width: 360px;
+    }
+
+    .toast.show { transform: translateY(0); }
+
+    .progress {
+      height: 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      transition: width 0.45s ease;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 1100px) {
+      .hero, .grid { grid-template-columns: 1fr; }
+      .pipeline, .fix-flow { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 720px) {
+      .page { padding: 16px; }
+      .pipeline, .fix-flow, .risk-row { grid-template-columns: 1fr; }
+      .panel-header { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <strong>Performance Suite</strong>
+        <span>JMeter Pipeline Demo</span>
+      </div>
+      <div class="topbar-actions">
+        <span class="pill">Request ID: PERF-REQ-005</span>
+        <span class="pill">Tool: JMeter</span>
+        <span class="pill active-pill">Status: Analysis Review</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card">
+        <span class="eyebrow">✓ Performance Suite Pipeline · Stage 5</span>
+        <h1>JMeter Script Analysis & Auto Correct</h1>
+        <p class="subtitle">
+          Validation-demo styled workflow for reviewing a recorded JMX, visualizing issues using a Graph RAG map, approving recommended fixes, applying automated corrections, reviewing the corrected script, and moving into test plan generation.
+        </p>
+      </div>
+      <aside class="status-card">
+        <div>
+          <div class="mini-title">Current Quality Score</div>
+          <div class="score"><strong id="qualityScore">62</strong><span>/ 100 before correction</span></div>
+          <div class="progress"><span id="scoreProgress" style="width:62%"></span></div>
+        </div>
+        <div class="risk-row">
+          <div class="risk-box risk-high"><b id="highCount">5</b><small>High</small></div>
+          <div class="risk-box risk-med"><b id="mediumCount">6</b><small>Medium</small></div>
+          <div class="risk-box risk-low"><b id="lowCount">3</b><small>Low</small></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="pipeline" aria-label="Pipeline status">
+      <div class="pipe-step done"><div class="step-no">1</div><h3>JMX Uploaded</h3><p>Recorded script received and parsed successfully.</p></div>
+      <div class="pipe-step active" id="pipeAnalysis"><div class="step-no">2</div><h3>Analysis Result</h3><p>Graph RAG view and issue classification.</p></div>
+      <div class="pipe-step" id="pipeFix"><div class="step-no">3</div><h3>Auto Correct</h3><p>Apply approved script improvement actions.</p></div>
+      <div class="pipe-step" id="pipeReview"><div class="step-no">4</div><h3>Review JMX</h3><p>Inspect updated script in console pane.</p></div>
+      <div class="pipe-step" id="pipeNext"><div class="step-no">5</div><h3>Next Stage</h3><p>Save, download, or generate test plan.</p></div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Analysis Result: Graph RAG View</h2>
+            <span class="badge warn" id="analysisBadge">Approval Required</span>
+          </div>
+          <div class="rag-wrap">
+            <svg viewBox="0 0 760 510" role="img" aria-label="Graph RAG analysis result">
+              <defs>
+                <filter id="glow"><feGaussianBlur stdDeviation="3.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs>
+              <line class="edge red" x1="380" y1="80" x2="165" y2="180" />
+              <line class="edge red" x1="380" y1="80" x2="590" y2="180" />
+              <line class="edge amber" x1="380" y1="80" x2="380" y2="220" />
+              <line class="edge amber" x1="165" y1="180" x2="210" y2="330" />
+              <line class="edge amber" x1="590" y1="180" x2="550" y2="330" />
+              <line class="edge green" x1="380" y1="220" x2="210" y2="330" />
+              <line class="edge green" x1="380" y1="220" x2="550" y2="330" />
+              <line class="edge" x1="210" y1="330" x2="380" y2="430" />
+              <line class="edge" x1="550" y1="330" x2="380" y2="430" />
+
+              <g class="node" filter="url(#glow)">
+                <circle cx="380" cy="80" r="58" fill="#62d6ff" />
+                <text x="380" y="74" text-anchor="middle">Uploaded JMX</text>
+                <text x="380" y="92" text-anchor="middle" class="sub">TestPlan.jmx</text>
+              </g>
+
+              <g class="node" filter="url(#glow)">
+                <circle cx="165" cy="180" r="62" fill="#ff6b7a" />
+                <text x="165" y="170" text-anchor="middle">Hardcoded</text>
+                <text x="165" y="188" text-anchor="middle">Values</text>
+                <text x="165" y="206" text-anchor="middle" class="sub">High Risk</text>
+              </g>
+
+              <g class="node" filter="url(#glow)">
+                <circle cx="590" cy="180" r="62" fill="#ff6b7a" />
+                <text x="590" y="170" text-anchor="middle">Correlation</text>
+                <text x="590" y="188" text-anchor="middle">Required</text>
+                <text x="590" y="206" text-anchor="middle" class="sub">High Risk</text>
+              </g>
+
+              <g class="node" filter="url(#glow)">
+                <circle cx="380" cy="220" r="58" fill="#ffca5f" />
+                <text x="380" y="212" text-anchor="middle">Missing</text>
+                <text x="380" y="230" text-anchor="middle">Headers</text>
+                <text x="380" y="248" text-anchor="middle" class="sub">Medium</text>
+              </g>
+
+              <g class="node" filter="url(#glow)">
+                <circle cx="210" cy="330" r="62" fill="#ffca5f" />
+                <text x="210" y="320" text-anchor="middle">Think Time</text>
+                <text x="210" y="338" text-anchor="middle">& Pacing</text>
+                <text x="210" y="356" text-anchor="middle" class="sub">Medium</text>
+              </g>
+
+              <g class="node" filter="url(#glow)">
+                <circle cx="550" cy="330" r="62" fill="#ffca5f" />
+                <text x="550" y="320" text-anchor="middle">Assertions</text>
+                <text x="550" y="338" text-anchor="middle">Missing</text>
+                <text x="550" y="356" text-anchor="middle" class="sub">Medium</text>
+              </g>
+
+              <g class="node" filter="url(#glow)">
+                <circle cx="380" cy="430" r="58" fill="#45e38a" />
+                <text x="380" y="422" text-anchor="middle">Auto Fix</text>
+                <text x="380" y="440" text-anchor="middle">Candidate</text>
+                <text x="380" y="458" text-anchor="middle" class="sub">Ready</text>
+              </g>
+            </svg>
+          </div>
+          <div class="actions">
+            <button class="success" id="approveAnalysisBtn">Approve Analysis Result</button>
+            <button class="secondary" id="rerunBtn">Re-run Analysis</button>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="fixPanel">
+          <div class="panel-header">
+            <h2 class="panel-title">Implement Suggested Correction Flow</h2>
+            <span class="badge info" id="fixBadge">Waiting to Start</span>
+          </div>
+          <div class="fix-flow">
+            <div class="fix-card ready" id="fix1"><h4>1. Externalize Values</h4><p>Move base URL, credentials, account IDs, and environment values into variables and CSV data sets.</p></div>
+            <div class="fix-card blocked" id="fix2"><h4>2. Add Correlation</h4><p>Insert extractors for CSRF token, session ID, order ID, and dynamic hidden fields.</p></div>
+            <div class="fix-card blocked" id="fix3"><h4>3. Normalize Requests</h4><p>Remove repeated calls, disable static resources, add headers, cookie manager, and cache manager.</p></div>
+            <div class="fix-card blocked" id="fix4"><h4>4. Improve Validation</h4><p>Add transaction controllers, response assertions, timers, and meaningful transaction names.</p></div>
+          </div>
+          <div class="actions">
+            <button class="warn" id="applyFixBtn">Implement Suggested Corrections</button>
+          </div>
+        </section>
+      </div>
+
+      <div>
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Detected Improvement Areas</h2>
+            <span class="badge warn">14 Findings</span>
+          </div>
+          <div class="analysis-list">
+            <div class="finding"><span class="severity high"></span><div><h4>Hardcoded environment URL</h4><p><code>https://qa-api.example.com</code> should be moved to <code>${base_url}</code>.</p></div><span class="badge warn">Auto-fix</span></div>
+            <div class="finding"><span class="severity high"></span><div><h4>Dynamic CSRF token not correlated</h4><p>Login response token is reused statically in downstream POST requests.</p></div><span class="badge warn">Auto-fix</span></div>
+            <div class="finding"><span class="severity high"></span><div><h4>Session handling incomplete</h4><p>Cookie Manager exists but is disabled; Cache Manager is missing.</p></div><span class="badge warn">Auto-fix</span></div>
+            <div class="finding"><span class="severity medium"></span><div><h4>Missing parameterization</h4><p>User IDs, product IDs, search terms, and payment references need CSV-backed data.</p></div><span class="badge info">Template</span></div>
+            <div class="finding"><span class="severity medium"></span><div><h4>Missing assertions</h4><p>Critical login, search, checkout, and confirmation transactions need response checks.</p></div><span class="badge warn">Auto-fix</span></div>
+            <div class="finding"><span class="severity low"></span><div><h4>Poor transaction naming</h4><p>Recorded sampler names should be converted to business transaction names.</p></div><span class="badge good">Safe</span></div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="consolePanel">
+      <div class="panel-header">
+        <h2 class="panel-title">Updated JMX Script Preview</h2>
+        <span class="badge good" id="consoleBadge">Generated After Auto Correct</span>
+      </div>
+      <div class="console" id="consolePane">Waiting for suggested corrections to be implemented...</div>
+      <div class="actions">
+        <button class="success" id="approveChangesBtn">Approve These Changes</button>
+        <button class="secondary" id="copyBtn">Copy Script Preview</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="finalPanel">
+      <div class="panel-header">
+        <h2 class="panel-title">Approved Script Actions</h2>
+        <span class="badge good">Ready for Next Stage</span>
+      </div>
+      <p class="subtitle">
+        The updated JMX has passed the demo approval gate. Save the corrected script, download it as a JMX file, or continue to test plan generation.
+      </p>
+      <div class="actions">
+        <button class="success" id="saveBtn">Save Script</button>
+        <button id="downloadBtn">Download Script</button>
+        <button class="purple" id="testPlanBtn">Test Plan Generation</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const updatedJmx = `<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="PT_Online_Order_Journey" enabled="true">
+      <stringProp name="TestPlan.comments">Auto-corrected by Performance Suite pipeline</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="base_url" elementType="Argument">
+            <stringProp name="Argument.name">base_url</stringProp>
+            <stringProp name="Argument.value">${environment_host}</stringProp>
+          </elementProp>
+          <elementProp name="protocol" elementType="Argument">
+            <stringProp name="Argument.name">protocol</stringProp>
+            <stringProp name="Argument.value">https</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="TG_Online_Order_Business_Flow" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">${users}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${ramp_up_seconds}</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV_User_Test_Data" enabled="true">
+          <stringProp name="filename">data/users.csv</stringProp>
+          <stringProp name="variableNames">username,password,accountId,productId</stringProp>
+          <boolProp name="ignoreFirstLine">true</boolProp>
+          <boolProp name="recycle">true</boolProp>
+        </CSVDataSet>
+        <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP Cookie Manager" enabled="true" />
+        <CacheManager guiclass="CacheManagerGui" testclass="CacheManager" testname="HTTP Cache Manager" enabled="true" />
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Common HTTP Headers" enabled="true">
+          <collectionProp name="HeaderManager.headers">
+            <elementProp name="Accept" elementType="Header"><stringProp name="Header.name">Accept</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp>
+            <elementProp name="Content-Type" elementType="Header"><stringProp name="Header.name">Content-Type</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp>
+          </collectionProp>
+        </HeaderManager>
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TRX_01_Login" enabled="true">
+          <boolProp name="TransactionController.parent">true</boolProp>
+        </TransactionController>
+        <hashTree>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST_Login" enabled="true">
+            <stringProp name="HTTPSampler.domain">${base_url}</stringProp>
+            <stringProp name="HTTPSampler.path">/api/login</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="CORR_CSRF_Token" enabled="true">
+              <stringProp name="RegexExtractor.refname">csrf_token</stringProp>
+              <stringProp name="RegexExtractor.regex">"csrfToken":"(.+?)"</stringProp>
+              <stringProp name="RegexExtractor.default">TOKEN_NOT_FOUND</stringProp>
+            </RegexExtractor>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="ASSERT_Login_200" enabled="true">
+              <collectionProp name="Asserion.test_strings"><stringProp name="49586">200</stringProp></collectionProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+            </ResponseAssertion>
+          </hashTree>
+        </hashTree>
+        <UniformRandomTimer guiclass="UniformRandomTimerGui" testclass="UniformRandomTimer" testname="ThinkTime_2_to_5_seconds" enabled="true">
+          <stringProp name="ConstantTimer.delay">2000</stringProp>
+          <stringProp name="RandomTimer.range">3000</stringProp>
+        </UniformRandomTimer>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>`;
+
+    const toast = document.getElementById('toast');
+    const showToast = (msg) => {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    };
+
+    const setStep = (id, status) => {
+      const el = document.getElementById(id);
+      el.classList.remove('active', 'done');
+      if (status) el.classList.add(status);
+    };
+
+    document.getElementById('approveAnalysisBtn').addEventListener('click', () => {
+      document.getElementById('analysisBadge').className = 'badge good';
+      document.getElementById('analysisBadge').textContent = 'Analysis Approved';
+      document.getElementById('fixPanel').classList.remove('hidden');
+      setStep('pipeAnalysis', 'done');
+      setStep('pipeFix', 'active');
+      showToast('Analysis approved. Suggested correction flow is now enabled.');
+    });
+
+    document.getElementById('rerunBtn').addEventListener('click', () => {
+      showToast('Demo analysis completed again. No new findings detected.');
+    });
+
+    document.getElementById('applyFixBtn').addEventListener('click', () => {
+      const cards = ['fix1', 'fix2', 'fix3', 'fix4'];
+      document.getElementById('fixBadge').className = 'badge info';
+      document.getElementById('fixBadge').textContent = 'Applying Corrections';
+      cards.forEach((id, index) => {
+        setTimeout(() => {
+          const card = document.getElementById(id);
+          card.classList.remove('blocked', 'ready');
+          card.classList.add('done');
+          if (index < cards.length - 1) {
+            const next = document.getElementById(cards[index + 1]);
+            next.classList.remove('blocked');
+            next.classList.add('ready');
+          }
+        }, 450 * (index + 1));
+      });
+      setTimeout(() => {
+        document.getElementById('fixBadge').className = 'badge good';
+        document.getElementById('fixBadge').textContent = 'Corrections Implemented';
+        document.getElementById('consolePanel').classList.remove('hidden');
+        document.getElementById('consolePane').textContent = updatedJmx;
+        document.getElementById('qualityScore').textContent = '91';
+        document.getElementById('scoreProgress').style.width = '91%';
+        document.getElementById('highCount').textContent = '0';
+        document.getElementById('mediumCount').textContent = '2';
+        document.getElementById('lowCount').textContent = '1';
+        setStep('pipeFix', 'done');
+        setStep('pipeReview', 'active');
+        showToast('Auto correction complete. Updated JMX preview is available.');
+      }, 2450);
+    });
+
+    document.getElementById('approveChangesBtn').addEventListener('click', () => {
+      document.getElementById('finalPanel').classList.remove('hidden');
+      document.getElementById('consoleBadge').textContent = 'Changes Approved';
+      setStep('pipeReview', 'done');
+      setStep('pipeNext', 'active');
+      showToast('Updated JMX changes approved. Final actions are now enabled.');
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(document.getElementById('consolePane').textContent);
+        showToast('Script preview copied to clipboard.');
+      } catch (e) {
+        showToast('Clipboard access blocked by browser. Select and copy manually.');
+      }
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      showToast('Demo save completed. Script status: Approved and saved.');
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      const blob = new Blob([updatedJmx], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'PT_Online_Order_Journey_AutoCorrected.jmx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Corrected JMX download started.');
+    });
+
+    document.getElementById('testPlanBtn').addEventListener('click', () => {
+      showToast('Moving to Test Plan Generation stage with approved corrected JMX.');
+    });
+  </script>
+</body>
+</html>
